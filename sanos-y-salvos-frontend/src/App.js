@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Login from './components/Login';
+import Register from './components/Register'; // 🆕 Import del componente Register
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -388,6 +389,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} /> {/* 🆕 Ruta de registro */}
         <Route path="/" element={<ProtectedRoute><MainApp /></ProtectedRoute>} />
       </Routes>
     </Router>
