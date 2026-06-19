@@ -15,6 +15,8 @@ function MainApp() {
   const [loading, setLoading] = useState(true);
   const [mostrarFormulario, setMostrarFormulario] = useState(false); 
   const [mascotaEncuentro, setMascotaEncuentro] = useState(null); 
+  
+  // ESTADO PARA LA IMAGEN: Guarda la URL temporal de la foto subida
   const [fotoEncuentro, setFotoEncuentro] = useState(null);
   
   const [filtroActivo, setFiltroActivo] = useState('PERDIDA');
@@ -66,6 +68,7 @@ function MainApp() {
     navigate('/login');
   };
 
+  // FUNCIÓN PARA CAPTURAR LA IMAGEN: Crea la ruta en memoria para mostrarla al instante
   const handleImagenChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -76,7 +79,7 @@ function MainApp() {
 
   const cerrarModalEncuentro = () => {
     setMascotaEncuentro(null);
-    setFotoEncuentro(null);
+    setFotoEncuentro(null); // Limpia la foto al cerrar
   };
 
   const handleConfirmarEncuentro = () => {
@@ -89,6 +92,7 @@ function MainApp() {
 
   return (
     <div className="App">
+      {/* BARRA DE NAVEGACIÓN */}
       <nav className="navbar">
         <div className="navbar-brand">
           <span className="logo-icon">🐾</span>
@@ -110,6 +114,7 @@ function MainApp() {
         </div>
       </nav>
 
+      {/* HERO SECTION */}
       <header className="hero-section">
         <div className="hero-badge">SISTEMA DE BÚSQUEDA ACTIVO</div>
         <h1>MASCOTAS <span className="highlight">PERDIDAS</span><br/>EN TU SECTOR</h1>
@@ -118,6 +123,7 @@ function MainApp() {
 
       <main className="container">
         
+        {/* MODAL 1: PUBLICAR NUEVA MASCOTA */}
         {mostrarFormulario && (
           <div className="form-modal-overlay" onClick={() => setMostrarFormulario(false)}>
             <form onSubmit={handleSubmit} className="form-card" onClick={(e) => e.stopPropagation()}>
@@ -138,6 +144,7 @@ function MainApp() {
           </div>
         )}
 
+        {/* MODAL 2: REPORTAR ENCUENTRO DE UNA MASCOTA */}
         {mascotaEncuentro && (
           <div className="form-modal-overlay" onClick={cerrarModalEncuentro}>
             <div className="encuentro-card" onClick={(e) => e.stopPropagation()}>
@@ -156,6 +163,7 @@ function MainApp() {
                 <h3>Completa los datos del hallazgo</h3>
                 <p className="text-muted">Solo necesitamos algunos datos para verificar el encuentro.</p>
 
+                {/* SECCIÓN DE SUBIDA DE IMAGEN */}
                 <div className="upload-section">
                   <div className="upload-header">
                     <label>FOTO DE PRUEBA (OPCIONAL)</label>
@@ -163,10 +171,20 @@ function MainApp() {
                   </div>
                   <p className="upload-subtext">Sube una foto actual para verificar que es la misma mascota</p>
                   
-                  <label className="upload-box" style={{ padding: fotoEncuentro ? '0' : '20px', overflow: 'hidden' }}>
-                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImagenChange} />
+                  {/* El label actúa como botón contenedor del input oculto */}
+                  <label className="upload-box" style={{ padding: fotoEncuentro ? '0' : '20px', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      style={{ display: 'none' }} 
+                      onChange={handleImagenChange}
+                    />
                     {fotoEncuentro ? (
-                      <img src={fotoEncuentro} alt="Vista previa" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img 
+                        src={fotoEncuentro} 
+                        alt="Vista previa del hallazgo" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} 
+                      />
                     ) : (
                       <span>📷 Agregar</span>
                     )}
@@ -258,7 +276,7 @@ function MainApp() {
           </div>
         </div>
 
-        {/* LISTADO DE MASCOTAS */}
+        {/* LISTADO DE TARJETAS */}
         <section className="listado">
           <div className="listado-header">
             <h3>{filtroActivo === 'REUNIDO' ? 'Historias felices' : 'Últimos reportes'}</h3>
@@ -312,13 +330,9 @@ function MainApp() {
         </section>
       </main>
 
-      {/* =======================================
-          NUEVO: FOOTER PROFESIONAL
-      ======================================= */}
+      {/* FOOTER */}
       <footer className="footer">
         <div className="footer-content">
-          
-          {/* Columna 1: Marca */}
           <div className="footer-column">
             <div className="footer-brand">
               <span className="logo-icon">🐾</span>
@@ -330,12 +344,9 @@ function MainApp() {
             <p className="footer-description">
               Plataforma dedicada a la búsqueda y rescate de mascotas en la comuna de Puente Alto y sus alrededores.
             </p>
-            <div className="footer-illustration">
-              🤝🐾
-            </div>
+            <div className="footer-illustration">🤝🐾</div>
           </div>
 
-          {/* Columna 2: Desarrolladores */}
           <div className="footer-column text-center">
             <h4 className="footer-title">EQUIPO DESARROLLADOR</h4>
             <p className="footer-subtitle">Desarrollado con ❤️ por</p>
@@ -347,7 +358,6 @@ function MainApp() {
             <p className="footer-copyright">PARA AYUDAR A LA COMUNIDAD • © 2026</p>
           </div>
 
-          {/* Columna 3: Prensa */}
           <div className="footer-column">
             <h4 className="footer-title">EN PRENSA</h4>
             <div className="prensa-tags">
@@ -360,12 +370,10 @@ function MainApp() {
               <span>24 Horas</span>
             </div>
           </div>
-
         </div>
 
         <div className="footer-divider"></div>
 
-        {/* Botones inferiores */}
         <div className="footer-bottom">
           <button className="btn-footer-contacto">✉️ Contacto</button>
           <button className="btn-footer-acopio">🔥 Puntos de Acopio ↗</button>
