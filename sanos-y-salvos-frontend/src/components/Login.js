@@ -29,6 +29,7 @@ const Login = () => {
                 localStorage.setItem('usuarioLogueado', 'true');
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('correo', data.correo);
+                localStorage.setItem('usuarioEmail', data.correo); // 🆕 Para el menú de usuario
                 navigate('/'); 
             } else {
                 setError('Correo o contraseña incorrectos.');

@@ -1330,3 +1330,122 @@ body {
     width: 100%;
   }
 }
+
+/* =========================================
+   12. MENÚ DE USUARIO
+========================================= */
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.usuario-menu-container {
+  position: relative;
+}
+
+.btn-usuario {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.btn-usuario:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.usuario-icon {
+  font-size: 1.3rem;
+}
+
+.usuario-info {
+  text-align: left;
+  line-height: 1.2;
+}
+
+.usuario-bienvenida {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.usuario-nombre {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.usuario-flecha {
+  font-size: 0.7rem;
+  margin-left: 5px;
+}
+
+.usuario-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  min-width: 280px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease;
+}
+
+.usuario-dropdown-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.usuario-dropdown-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 5px;
+}
+
+.usuario-dropdown-email {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.usuario-dropdown-body {
+  padding: 8px 0;
+}
+
+.btn-cerrar-sesion {
+  width: 100%;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s;
+}
+
+.btn-cerrar-sesion:hover {
+  background: #fef2f2;
+}

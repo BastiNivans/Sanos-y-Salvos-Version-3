@@ -28,11 +28,14 @@ function MainApp() {
   const [fotoEncuentro, setFotoEncuentro] = useState(null);
   const [filtroActivo, setFiltroActivo] = useState('PERDIDA');
 
-  // 🆕 ESTADOS PARA BÚSQUEDA Y FILTROS
+  // Estados para búsqueda y filtros
   const [textoBusqueda, setTextoBusqueda] = useState('');
   const [filtroEspecie, setFiltroEspecie] = useState('TODAS');
   const [filtroRaza, setFiltroRaza] = useState('TODAS');
-  const [filtroComuna, setFiltroComuna] = useState('TODAS');
+
+  // Estados para menú de usuario
+  const [mostrarMenuUsuario, setMostrarMenuUsuario] = useState(false);
+  const [usuarioEmail, setUsuarioEmail] = useState('');
 
   const [formulario, setFormulario] = useState({
     tipoReporte: 'PERDIDA',
@@ -45,6 +48,31 @@ function MainApp() {
   const [previewUrls, setPreviewUrls] = useState([]);
   
   const navigate = useNavigate();
+
+  // Obtener email del usuario al cargar
+  useEffect(() => {
+    const emailGuardado = localStorage.getItem('usuarioEmail') || localStorage.getItem('correo');
+    if (emailGuardado) {
+      setUsuarioEmail(emailGuardado);
+    }
+  }, []);
+
+  // Cerrar menú al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (mostrarMenuUsuario) {
+        setMostrarMenuUsuario(false);
+      }
+    };
+
+    if (mostrarMenuUsuario) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [mostrarMenuUsuario]);
 
   const cargarMascotas = async () => {
     try {
@@ -208,11 +236,10 @@ function MainApp() {
     );
   };
 
-  // 🆕 OBTENER OPCIONES DINÁMICAS PARA LOS FILTROS
+  // Opciones dinámicas para los filtros
   const opcionesEspecie = useMemo(() => {
     const especies = [...new Set(mascotas.map(m => {
       if (!m.especie) return null;
-      // Extraer solo la especie (antes del guión si existe)
       const parte = m.especie.split('-')[0].trim();
       return parte;
     }).filter(e => e))];
@@ -224,62 +251,41 @@ function MainApp() {
     return razas.sort();
   }, [mascotas]);
 
-  const opcionesComuna = useMemo(() => {
-    const comunas = [...new Set(mascotas.map(m => {
-      if (!m.ubicacion) return null;
-      // Intentar extraer comuna (última palabra o texto después de la última coma)
-      const partes = m.ubicacion.split(',');
-      return partes[partes.length - 1].trim();
-    }).filter(c => c))];
-    return comunas.sort();
-  }, [mascotas]);
-
-  // 🆕 FILTRADO COMBINADO
+  // Filtrado combinado
   const mascotasFiltradas = useMemo(() => {
     return mascotas.filter(m => {
-      // 1. Filtro por tipo de reporte (pestañas)
       if (m.tipoReporte !== filtroActivo) return false;
       
-      // 2. Filtro por texto de búsqueda
       if (textoBusqueda.trim() !== '') {
         const busqueda = textoBusqueda.toLowerCase();
         const textoMascota = `${m.especie || ''} ${m.raza || ''} ${m.ubicacion || ''}`.toLowerCase();
         if (!textoMascota.includes(busqueda)) return false;
       }
       
-      // 3. Filtro por especie
       if (filtroEspecie !== 'TODAS') {
         const especieMascota = (m.especie || '').split('-')[0].trim().toLowerCase();
         if (especieMascota !== filtroEspecie.toLowerCase()) return false;
       }
       
-      // 4. Filtro por raza
       if (filtroRaza !== 'TODAS') {
         if ((m.raza || '').toLowerCase() !== filtroRaza.toLowerCase()) return false;
       }
       
-      // 5. Filtro por comuna
-      if (filtroComuna !== 'TODAS') {
-        const comunaMascota = (m.ubicacion || '').split(',').pop().trim().toLowerCase();
-        if (comunaMascota !== filtroComuna.toLowerCase()) return false;
-      }
-      
       return true;
     });
-  }, [mascotas, filtroActivo, textoBusqueda, filtroEspecie, filtroRaza, filtroComuna]);
+  }, [mascotas, filtroActivo, textoBusqueda, filtroEspecie, filtroRaza]);
 
-  // 🆕 FUNCIÓN PARA LIMPIAR TODOS LOS FILTROS
   const limpiarFiltros = () => {
     setTextoBusqueda('');
     setFiltroEspecie('TODAS');
     setFiltroRaza('TODAS');
-    setFiltroComuna('TODAS');
   };
 
   const imagenPlaceholder = "https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
 
   return (
     <div className="App">
+      {/* NAVBAR CON MENÚ DE USUARIO */}
       <nav className="navbar">
         <div className="navbar-brand">
           <span className="logo-icon">🐾</span>
@@ -297,10 +303,48 @@ function MainApp() {
           <button className="btn-publicar" onClick={() => setMostrarFormulario(!mostrarFormulario)}>
             {mostrarFormulario ? "CANCELAR" : "+ PUBLICAR MASCOTA"}
           </button>
-          <button className="btn-logout-nav" onClick={handleLogout}>Salir</button>
+          
+          {/* MENÚ DE USUARIO */}
+          <div className="usuario-menu-container" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="btn-usuario" 
+              onClick={() => setMostrarMenuUsuario(!mostrarMenuUsuario)}
+            >
+              <span className="usuario-icon">👤</span>
+              <div className="usuario-info">
+                <div className="usuario-bienvenida">Bienvenido</div>
+                <div className="usuario-nombre">
+                  {usuarioEmail ? usuarioEmail.split('@')[0] : 'Usuario'}
+                </div>
+              </div>
+              <span className="usuario-flecha">{mostrarMenuUsuario ? '▲' : '▼'}</span>
+            </button>
+            
+            {mostrarMenuUsuario && (
+              <div className="usuario-dropdown-menu">
+                <div className="usuario-dropdown-header">
+                  <div className="usuario-dropdown-label">Sesión iniciada como</div>
+                  <div className="usuario-dropdown-email">{usuarioEmail}</div>
+                </div>
+                <div className="usuario-dropdown-body">
+                  <button 
+                    className="btn-cerrar-sesion"
+                    onClick={() => {
+                      handleLogout();
+                      setMostrarMenuUsuario(false);
+                    }}
+                  >
+                    <span>🚪</span>
+                    Cerrar sesión
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
+      {/* HERO SECTION */}
       <header className="hero-section">
         <div className="hero-badge">SISTEMA DE BÚSQUEDA ACTIVO</div>
         <h1>MASCOTAS <span className="highlight">PERDIDAS</span><br/>EN TU SECTOR</h1>
@@ -409,7 +453,7 @@ function MainApp() {
                 
                 <div className="detalle-datos">
                   <div className="detalle-dato">
-                    <span className="detalle-label"> Raza:</span>
+                    <span className="detalle-label">🦴 Raza:</span>
                     <span className="detalle-valor">{mascotaSeleccionada.raza}</span>
                   </div>
                   <div className="detalle-dato">
@@ -460,7 +504,7 @@ function MainApp() {
                 {cargandoCoincidencias ? (
                   <div className="loading-coincidencias">
                     <div className="spinner"></div>
-                    <p> Calculando coincidencias...</p>
+                    <p>🔍 Calculando coincidencias...</p>
                   </div>
                 ) : (
                   <>
@@ -514,7 +558,7 @@ function MainApp() {
         {mascotaEncuentro && (
           <div className="form-modal-overlay" onClick={cerrarModalEncuentro}>
             <div className="encuentro-card" onClick={(e) => e.stopPropagation()}>
-              <button className="btn-close" onClick={cerrarModalEncuentro}></button>
+              <button className="btn-close" onClick={cerrarModalEncuentro}>✕</button>
               <div className="encuentro-header">
                 <img src={obtenerUrlImagen(mascotaEncuentro.imagenesUrls)} alt="Mascota" className="encuentro-img" />
                 <div className="encuentro-info-header">
@@ -567,14 +611,14 @@ function MainApp() {
           </div>
         )}
 
-        {/* FILTROS */}
+        {/* FILTROS PRINCIPALES */}
         <div className="filtros-bar">
           <div className={`filtro-tab ${filtroActivo === 'PERDIDA' ? 'active' : ''}`} onClick={() => setFiltroActivo('PERDIDA')}>🔍 Perdidos</div>
           <div className={`filtro-tab ${filtroActivo === 'ENCONTRADA' ? 'active' : ''}`} onClick={() => setFiltroActivo('ENCONTRADA')}>🧡 Buscan a su Familia</div>
-          <div className={`filtro-tab ${filtroActivo === 'REUNIDO' ? 'active' : ''}`} onClick={() => setFiltroActivo('REUNIDO')}> Reunidos</div>
+          <div className={`filtro-tab ${filtroActivo === 'REUNIDO' ? 'active' : ''}`} onClick={() => setFiltroActivo('REUNIDO')}>🐾 Reunidos</div>
         </div>
 
-        {/* 🆕 BARRA DE BÚSQUEDA Y FILTROS FUNCIONALES */}
+        {/* BARRA DE BÚSQUEDA Y FILTROS */}
         <div className="advanced-filters">
           <div className="search-row">
             <label>Buscar mascotas</label>
@@ -607,7 +651,7 @@ function MainApp() {
             <div className="filter-group">
               <label>Especie</label>
               <select value={filtroEspecie} onChange={(e) => setFiltroEspecie(e.target.value)}>
-                <option value="TODAS">Todas ({mascotasFiltradas.length})</option>
+                <option value="TODAS">Todas</option>
                 {opcionesEspecie.map(especie => (
                   <option key={especie} value={especie}>{especie}</option>
                 ))}
@@ -622,19 +666,9 @@ function MainApp() {
                 ))}
               </select>
             </div>
-            <div className="filter-group">
-              <label>Comuna</label>
-              <select value={filtroComuna} onChange={(e) => setFiltroComuna(e.target.value)}>
-                <option value="TODAS">Todas</option>
-                {opcionesComuna.map(comuna => (
-                  <option key={comuna} value={comuna}>{comuna}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
-          {/* 🆕 BOTÓN PARA LIMPIAR FILTROS */}
-          {(textoBusqueda || filtroEspecie !== 'TODAS' || filtroRaza !== 'TODAS' || filtroComuna !== 'TODAS') && (
+          {(textoBusqueda || filtroEspecie !== 'TODAS' || filtroRaza !== 'TODAS') && (
             <div style={{ marginTop: '15px', textAlign: 'right' }}>
               <button 
                 onClick={limpiarFiltros}
@@ -667,9 +701,9 @@ function MainApp() {
           ) : (
             <div className="mascotas-grid">
               {mascotasFiltradas.length === 0 && (
-                <p style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                  {textoBusqueda || filtroEspecie !== 'TODAS' || filtroRaza !== 'TODAS' || filtroComuna !== 'TODAS'
-                    ? ' No se encontraron mascotas con esos filtros. Intenta con otra búsqueda.'
+                <p style={{ textAlign: 'center', padding: '40px', color: '#64748b', gridColumn: '1 / -1' }}>
+                  {textoBusqueda || filtroEspecie !== 'TODAS' || filtroRaza !== 'TODAS'
+                    ? '😔 No se encontraron mascotas con esos filtros. Intenta con otra búsqueda.'
                     : 'No hay reportes en esta categoría por ahora.'}
                 </p>
               )}
@@ -706,7 +740,7 @@ function MainApp() {
                         {m.especie}
                       </h3>
                       <p className="mascota-raza">{m.raza}</p>
-                      <div className="mascota-ubicacion"> <span>{m.ubicacion}</span></div>
+                      <div className="mascota-ubicacion">📍 <span>{m.ubicacion}</span></div>
                     </div>
                     {!esReunido && (
                       <div className="card-footer">
@@ -724,6 +758,7 @@ function MainApp() {
         </section>
       </main>
 
+      {/* FOOTER */}
       <footer className="footer">
         <div className="footer-content">
           <div className="footer-column">
@@ -735,7 +770,7 @@ function MainApp() {
               </div>
             </div>
             <p className="footer-description">Plataforma dedicada a la búsqueda y rescate de mascotas en la comuna de Puente Alto y sus alrededores.</p>
-            <div className="footer-illustration">🐾</div>
+            <div className="footer-illustration">🤝🐾</div>
           </div>
           <div className="footer-column text-center">
             <h4 className="footer-title">EQUIPO DESARROLLADOR</h4>
