@@ -17,6 +17,12 @@ function MainApp() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false); 
   const [mascotaEncuentro, setMascotaEncuentro] = useState(null); 
   
+  // 🆕 ESTADOS PARA COINCIDENCIAS
+  const [coincidencias, setCoincidencias] = useState([]);
+  const [mascotaCoincidencias, setMascotaCoincidencias] = useState(null);
+  const [mostrarModalCoincidencias, setMostrarModalCoincidencias] = useState(false);
+  const [cargandoCoincidencias, setCargandoCoincidencias] = useState(false);
+  
   const [fotoEncuentro, setFotoEncuentro] = useState(null);
   
   const [filtroActivo, setFiltroActivo] = useState('PERDIDA');
@@ -45,8 +51,19 @@ function MainApp() {
     }
   };
 
+  // 🆕 CARGAR COINCIDENCIAS
+  const cargarCoincidencias = async () => {
+    try {
+      const res = await axios.get('/api/coincidencias');
+      setCoincidencias(res.data);
+    } catch (error) {
+      console.error("Error al cargar coincidencias:", error);
+    }
+  };
+
   useEffect(() => {
     cargarMascotas();
+    cargarCoincidencias(); // 🆕 Cargar coincidencias al inicio
   }, []);
 
   const handleChange = (e) => {
@@ -103,10 +120,36 @@ function MainApp() {
       setPreviewUrls([]);
       setMostrarFormulario(false); 
       cargarMascotas();
+      cargarCoincidencias(); // 🆕 Recargar coincidencias
     } catch (error) {
       console.error("Error al guardar:", error);
       alert("❌ Error al guardar la mascota.");
     }
+  };
+
+  // 🆕 FUNCIÓN PARA BUSCAR COINCIDENCIAS DE UNA MASCOTA
+  const buscarCoincidencias = (mascota) => {
+    setCargandoCoincidencias(true);
+    setMascotaCoincidencias(mascota);
+    setMostrarModalCoincidencias(true);
+    
+    // Simulamos un pequeño delay para mostrar el loading
+    setTimeout(() => {
+      setCargandoCoincidencias(false);
+    }, 500);
+  };
+
+  // 🆕 FUNCIÓN PARA OBTENER LAS COINCIDENCIAS DE UNA MASCOTA ESPECÍFICA
+  const obtenerCoincidenciasDeMascota = (mascotaId) => {
+    // Buscar coincidencias donde esta mascota sea la perdida O la encontrada
+    return coincidencias.filter(c => 
+      c.idMascotaPerdida === mascotaId || c.idMascotaEncontrada === mascotaId
+    );
+  };
+
+  // 🆕 FUNCIÓN PARA OBTENER DATOS DE UNA MASCOTA POR ID
+  const obtenerMascotaPorId = (id) => {
+    return mascotas.find(m => m.id === id);
   };
 
   const handleLogout = () => {
@@ -135,24 +178,20 @@ function MainApp() {
   const mascotasFiltradas = mascotas.filter(m => m.tipoReporte === filtroActivo);
   const imagenPlaceholder = "https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
 
-  // ✅ FUNCIÓN HELPER PARA OBTENER LA URL DE LA IMAGEN
   const obtenerUrlImagen = (imagenesUrls) => {
     if (!imagenesUrls || imagenesUrls.trim() === '') {
       return imagenPlaceholder;
     }
     
-    // Dividir por coma y tomar la primera imagen
     const imagenes = imagenesUrls.split(',');
     if (imagenes.length === 0 || !imagenes[0]) {
       return imagenPlaceholder;
     }
     
-    // Limpiar espacios y construir URL completa
     const primeraImagen = imagenes[0].trim();
     return `http://localhost:8081${primeraImagen}`;
   };
 
-  // ✅ FUNCIÓN HELPER PARA CONTAR IMÁGENES
   const contarImagenes = (imagenesUrls) => {
     if (!imagenesUrls || imagenesUrls.trim() === '') {
       return 0;
@@ -278,6 +317,90 @@ function MainApp() {
           </div>
         )}
 
+        {/* 🆕 MODAL 3: COINCIDENCIAS */}
+        {mostrarModalCoincidencias && mascotaCoincidencias && (
+          <div className="form-modal-overlay" onClick={() => setMostrarModalCoincidencias(false)}>
+            <div className="coincidencias-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="btn-close" onClick={() => setMostrarModalCoincidencias(false)}>✕</button>
+              
+              <div className="coincidencias-header">
+                <h2>🔍 Coincidencias para {mascotaCoincidencias.especie}</h2>
+                <p className="text-muted">Mascotas que podrían ser la misma</p>
+              </div>
+
+              <div className="coincidencias-body">
+                {cargandoCoincidencias ? (
+                  <div className="loading-coincidencias">
+                    <div className="spinner"></div>
+                    <p>Buscando coincidencias...</p>
+                  </div>
+                ) : (
+                  <>
+                    {obtenerCoincidenciasDeMascota(mascotaCoincidencias.id).length === 0 ? (
+                      <div className="no-coincidencias">
+                        <p>😔 No se encontraron coincidencias para esta mascota.</p>
+                        <p className="text-muted">El sistema analizará automáticamente cuando haya nuevos reportes.</p>
+                      </div>
+                    ) : (
+                      <div className="coincidencias-lista">
+                        {obtenerCoincidenciasDeMascota(mascotaCoincidencias.id).map(coincidencia => {
+                          // Determinar cuál es la otra mascota (la que coincide)
+                          const otraMascotaId = coincidencia.idMascotaPerdida === mascotaCoincidencias.id 
+                            ? coincidencia.idMascotaEncontrada 
+                            : coincidencia.idMascotaPerdida;
+                          
+                          const otraMascota = obtenerMascotaPorId(otraMascotaId);
+                          
+                          if (!otraMascota) return null;
+
+                          return (
+                            <div key={coincidencia.id} className="coincidencia-card">
+                              <div className="coincidencia-imagen">
+                                <img 
+                                  src={obtenerUrlImagen(otraMascota.imagenesUrls)} 
+                                  alt={otraMascota.especie}
+                                />
+                              </div>
+                              <div className="coincidencia-info">
+                                <h3>{otraMascota.especie}</h3>
+                                <p className="coincidencia-raza">{otraMascota.raza}</p>
+                                <p className="coincidencia-ubicacion">📍 {otraMascota.ubicacion}</p>
+                                <div className="coincidencia-similitud">
+                                  <div className="similitud-bar">
+                                    <div 
+                                      className="similitud-fill" 
+                                      style={{ width: `${coincidencia.nivelSimilitud}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="similitud-texto">
+                                    {coincidencia.nivelSimilitud}% de similitud
+                                  </span>
+                                </div>
+                                <span className={`coincidencia-badge status-${otraMascota.tipoReporte}`}>
+                                  {otraMascota.tipoReporte}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="coincidencias-footer">
+                <button 
+                  className="btn-cerrar-coincidencias" 
+                  onClick={() => setMostrarModalCoincidencias(false)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* MODAL 2: REPORTAR ENCUENTRO DE UNA MASCOTA */}
         {mascotaEncuentro && (
           <div className="form-modal-overlay" onClick={cerrarModalEncuentro}>
@@ -285,7 +408,6 @@ function MainApp() {
               <button className="btn-close" onClick={cerrarModalEncuentro}>✕</button>
               
               <div className="encuentro-header">
-                {/* ✅ USAR FUNCIÓN HELPER PARA OBTENER IMAGEN */}
                 <img 
                   src={obtenerUrlImagen(mascotaEncuentro.imagenesUrls)} 
                   alt="Mascota" 
@@ -430,11 +552,11 @@ function MainApp() {
                 const esReunido = m.tipoReporte === 'REUNIDO';
                 const cantidadImagenes = contarImagenes(m.imagenesUrls);
                 const primeraImagen = obtenerUrlImagen(m.imagenesUrls);
+                const tieneCoincidencias = obtenerCoincidenciasDeMascota(m.id).length > 0;
 
                 return (
                   <div key={m.id} className={`mascota-card ${esReunido ? 'is-reunido' : ''}`}>
                     <div className="card-image-container">
-                      {/* ✅ USAR FUNCIÓN HELPER PARA OBTENER IMAGEN */}
                       <img src={primeraImagen} alt="Mascota" className="card-image" />
                       
                       {cantidadImagenes > 1 && (
@@ -463,6 +585,13 @@ function MainApp() {
                     
                     {!esReunido && (
                       <div className="card-footer">
+                        {/* 🆕 BOTÓN DE COINCIDENCIAS */}
+                        <button 
+                          className="btn-coincidencias" 
+                          onClick={() => buscarCoincidencias(m)}
+                        >
+                          🔍 Ver Coincidencias {tieneCoincidencias && `(${obtenerCoincidenciasDeMascota(m.id).length})`}
+                        </button>
                         <button className="btn-reportar" onClick={() => setMascotaEncuentro(m)}>
                           REPORTAR ENCUENTRO
                         </button>

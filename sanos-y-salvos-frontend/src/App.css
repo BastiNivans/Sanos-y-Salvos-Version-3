@@ -892,3 +892,222 @@ body {
     height: 60px;
   }
 }
+
+
+
+
+/* =========================================
+   10. MODAL DE COINCIDENCIAS
+========================================= */
+
+.coincidencias-modal {
+  background: white;
+  width: 90%;
+  max-width: 700px;
+  border-radius: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.coincidencias-header {
+  padding: 30px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.coincidencias-header h2 {
+  margin: 0 0 10px 0;
+  color: #1e293b;
+  font-size: 1.5rem;
+}
+
+.coincidencias-body {
+  padding: 30px;
+  flex-grow: 1;
+}
+
+.loading-coincidencias {
+  text-align: center;
+  padding: 40px;
+}
+
+.spinner {
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.no-coincidencias {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+.no-coincidencias p:first-child {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: #1e293b;
+}
+
+.coincidencias-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.coincidencia-card {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.coincidencia-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.coincidencia-imagen {
+  flex-shrink: 0;
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.coincidencia-imagen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coincidencia-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.coincidencia-info h3 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.2rem;
+}
+
+.coincidencia-raza {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.coincidencia-ubicacion {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.coincidencia-similitud {
+  margin-top: 10px;
+}
+
+.similitud-bar {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.similitud-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #22c55e);
+  transition: width 0.5s ease;
+}
+
+.similitud-texto {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.coincidencia-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: white;
+  margin-top: 10px;
+  align-self: flex-start;
+}
+
+.coincidencias-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-cerrar-coincidencias {
+  padding: 12px 30px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-cerrar-coincidencias:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+}
+
+/* Botón de coincidencias en las tarjetas */
+.btn-coincidencias {
+  width: 100%;
+  padding: 10px;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 10px;
+}
+
+.btn-coincidencias:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .coincidencia-card {
+    flex-direction: column;
+  }
+  
+  .coincidencia-imagen {
+    width: 100%;
+    height: 200px;
+  }
+}
