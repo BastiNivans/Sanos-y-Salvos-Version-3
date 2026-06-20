@@ -45,6 +45,10 @@ function MainApp() {
   const [mostrarMapa, setMostrarMapa] = useState(false);
   const [mascotasParaMapa, setMascotasParaMapa] = useState([]);
 
+  // 🆕 ESTADOS PARA AUTOCOMPLETADO DE UBICACIÓN
+  const [sugerenciasUbicacion, setSugerenciasUbicacion] = useState([]);
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+
   const [formulario, setFormulario] = useState({
     tipoReporte: 'PERDIDA',
     especie: '',
@@ -81,6 +85,20 @@ function MainApp() {
       document.removeEventListener('click', handleClickOutside);
     };
   }, [mostrarMenuUsuario]);
+
+  // 🆕 EFECTO PARA AUTOCOMPLETADO (espera 500ms antes de buscar)
+  useEffect(() => {
+    if (formulario.ubicacion.length >= 3) {
+      const timer = setTimeout(() => {
+        buscarSugerencias(formulario.ubicacion);
+      }, 500); // Espera medio segundo antes de buscar
+
+      return () => clearTimeout(timer);
+    } else {
+      setSugerenciasUbicacion([]);
+      setMostrarSugerencias(false);
+    }
+  }, [formulario.ubicacion]);
 
   const cargarMascotas = async () => {
     try {
@@ -247,7 +265,6 @@ function MainApp() {
   // 🗺️ FUNCIÓN PARA CARGAR MASCOTAS EN EL MAPA
   const cargarMascotasEnMapa = async () => {
     try {
-      // Llamamos al microservicio de geolocalización (puerto 8083)
       const response = await axios.get('http://localhost:8083/api/geolocalizacion/todas');
       setMascotasParaMapa(response.data);
       setMostrarMapa(true);
@@ -255,6 +272,36 @@ function MainApp() {
       console.error("Error al cargar el mapa:", error);
       alert("❌ Error al cargar el mapa. Asegúrate de que el microservicio de geolocalización (puerto 8083) esté corriendo.");
     }
+  };
+
+  // 🆕 FUNCIÓN PARA BUSCAR DIRECCIONES REALES EN OPENSTREETMAP
+  const buscarSugerencias = async (texto) => {
+    if (texto.length < 3) {
+      setSugerenciasUbicacion([]);
+      return;
+    }
+
+    try {
+      // API gratuita de OpenStreetMap (Nominatim)
+      // countrycodes=cl limita la búsqueda a Chile
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(texto)}&countrycodes=cl&limit=5`
+      );
+      const data = await response.json();
+      
+      const sugerencias = data.map(item => item.display_name);
+      setSugerenciasUbicacion(sugerencias);
+      setMostrarSugerencias(sugerencias.length > 0);
+    } catch (error) {
+      console.error("Error al buscar ubicación:", error);
+    }
+  };
+
+  // 🆕 FUNCIÓN PARA SELECCIONAR UNA SUGERENCIA
+  const seleccionarSugerencia = (direccion) => {
+    setFormulario({ ...formulario, ubicacion: direccion });
+    setMostrarSugerencias(false);
+    setSugerenciasUbicacion([]);
   };
 
   // Opciones dinámicas para los filtros
@@ -406,7 +453,68 @@ function MainApp() {
               </div>
               <input name="especie" placeholder="Especie y Nombre (Ej: Perro - Gaspar)" value={formulario.especie} onChange={handleChange} required />
               <input name="raza" placeholder="Raza o descripción" value={formulario.raza} onChange={handleChange} required />
-              <input name="ubicacion" placeholder="Ubicación (Ej: Plaza de Puente Alto)" value={formulario.ubicacion} onChange={handleChange} required />
+              
+              {/* 🆕 INPUT DE UBICACIÓN CON AUTOCOMPLETADO */}
+              <div className="form-group" style={{ position: 'relative' }}>
+                <label>Ubicación (Escribe para buscar)</label>
+                <input 
+                  name="ubicacion" 
+                  placeholder="Ej: Plaza de Puente Alto..." 
+                  value={formulario.ubicacion} 
+                  onChange={(e) => {
+                    setFormulario({ ...formulario, ubicacion: e.target.value });
+                    setMostrarSugerencias(true);
+                  }}
+                  onBlur={() => setTimeout(() => setMostrarSugerencias(false), 200)}
+                  required 
+                />
+                
+                {/* 🗺️ LISTA DESPLEGABLE DE SUGERENCIAS */}
+                {mostrarSugerencias && sugerenciasUbicacion.length > 0 && (
+                  <ul style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    marginTop: '5px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    zIndex: 1000,
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}>
+                    {sugerenciasUbicacion.map((sugerencia, index) => (
+                      <li 
+                        key={index}
+                        onClick={() => seleccionarSugerencia(sugerencia)}
+                        style={{
+                          padding: '10px 15px',
+                          cursor: 'pointer',
+                          borderBottom: index < sugerenciasUbicacion.length - 1 ? '1px solid #f1f5f9' : 'none',
+                          fontSize: '0.9rem',
+                          color: '#334155'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = '#f8fafc'}
+                        onMouseLeave={(e) => e.target.style.background = 'white'}
+                      >
+                        📍 {sugerencia}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                
+                {mostrarSugerencias && formulario.ubicacion.length >= 3 && sugerenciasUbicacion.length === 0 && (
+                  <p style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '5px' }}>
+                    ⚠️ No se encontraron direcciones reales con ese texto.
+                  </p>
+                )}
+              </div>
+              
               <div className="form-group">
                 <label>Fotos de la mascota (opcional):</label>
                 <input type="file" accept="image/*" multiple onChange={handleImagenesChange} style={{ marginTop: '8px' }} />
@@ -662,7 +770,7 @@ function MainApp() {
 
               <div className="mapa-container">
                 <MapContainer 
-                  center={[-33.6119, -70.5746]} // Centro de Puente Alto, Chile
+                  center={[-33.6119, -70.5746]}
                   zoom={13}
                   style={{ height: '100%', width: '100%' }}
                 >
@@ -672,10 +780,8 @@ function MainApp() {
                   />
                   
                   {mascotasParaMapa.map(mascota => {
-                    // Validar que tenga coordenadas
                     if (!mascota.latitud || !mascota.longitud) return null;
                     
-                    // Color según tipo de reporte
                     const color = mascota.tipoReporte === 'PERDIDA' ? '#ef4444' : 
                                  mascota.tipoReporte === 'ENCONTRADA' ? '#f59e0b' : '#10b981';
                     
