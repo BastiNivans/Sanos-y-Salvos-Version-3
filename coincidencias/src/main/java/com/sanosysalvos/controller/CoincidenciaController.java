@@ -16,16 +16,31 @@ public class CoincidenciaController {
     private CoincidenciaRepository coincidenciaRepository;
 
     @Autowired
-    private CoincidenciaService coincidenciaService; // Aquí usamos el servicio que tiene tu Circuit Breaker
+    private CoincidenciaService coincidenciaService;
 
     @GetMapping
     public List<Coincidencia> listarCoincidencias() {
         return coincidenciaRepository.findAll();
     }
 
-    // Este endpoint probará tu Patrón Circuit Breaker conectándose al otro microservicio
     @GetMapping("/test-circuit-breaker")
     public String probarCircuitBreaker() {
         return coincidenciaService.buscarCoincidencias();
+    }
+
+    // 🆕 Calcular coincidencias para una mascota específica
+    @GetMapping("/calcular/{mascotaId}")
+    public List<Coincidencia> calcularCoincidenciasParaMascota(@PathVariable Long mascotaId) {
+        return coincidenciaService.calcularYGuardarCoincidencias(mascotaId);
+    }
+
+    // 🆕 Obtener coincidencias de una mascota
+    @GetMapping("/mascota/{mascotaId}")
+    public List<Coincidencia> obtenerCoincidenciasDeMascota(@PathVariable Long mascotaId) {
+        return coincidenciaRepository.findAll()
+            .stream()
+            .filter(c -> c.getIdMascotaPerdida().equals(mascotaId) || 
+                        c.getIdMascotaEncontrada().equals(mascotaId))
+            .toList();
     }
 }

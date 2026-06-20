@@ -17,14 +17,12 @@ function MainApp() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false); 
   const [mascotaEncuentro, setMascotaEncuentro] = useState(null); 
   
-  // 🆕 ESTADOS PARA COINCIDENCIAS
   const [coincidencias, setCoincidencias] = useState([]);
   const [mascotaCoincidencias, setMascotaCoincidencias] = useState(null);
   const [mostrarModalCoincidencias, setMostrarModalCoincidencias] = useState(false);
   const [cargandoCoincidencias, setCargandoCoincidencias] = useState(false);
   
   const [fotoEncuentro, setFotoEncuentro] = useState(null);
-  
   const [filtroActivo, setFiltroActivo] = useState('PERDIDA');
 
   const [formulario, setFormulario] = useState({
@@ -51,7 +49,6 @@ function MainApp() {
     }
   };
 
-  // 🆕 CARGAR COINCIDENCIAS
   const cargarCoincidencias = async () => {
     try {
       const res = await axios.get('/api/coincidencias');
@@ -63,7 +60,7 @@ function MainApp() {
 
   useEffect(() => {
     cargarMascotas();
-    cargarCoincidencias(); // 🆕 Cargar coincidencias al inicio
+    cargarCoincidencias();
   }, []);
 
   const handleChange = (e) => {
@@ -73,7 +70,6 @@ function MainApp() {
   const handleImagenesChange = (e) => {
     const files = Array.from(e.target.files);
     setImagenesMascota(files);
-    
     const urls = files.map(file => URL.createObjectURL(file));
     setPreviewUrls(urls);
   };
@@ -114,40 +110,36 @@ function MainApp() {
 
       await axios.post('/api/mascotas', datosMascota);
       
-      alert("✅ ¡Mascota registrada exitosamente!");
+      alert("✅ ¡Mascota registrada exitosamente! El sistema buscará coincidencias automáticamente.");
       setFormulario({ tipoReporte: 'PERDIDA', especie: '', raza: '', ubicacion: '' });
       setImagenesMascota([]);
       setPreviewUrls([]);
       setMostrarFormulario(false); 
       cargarMascotas();
-      cargarCoincidencias(); // 🆕 Recargar coincidencias
+      cargarCoincidencias();
     } catch (error) {
       console.error("Error al guardar:", error);
       alert("❌ Error al guardar la mascota.");
     }
   };
 
-  // 🆕 FUNCIÓN PARA BUSCAR COINCIDENCIAS DE UNA MASCOTA
-  const buscarCoincidencias = (mascota) => {
+  //  Buscar coincidencias llamando al backend
+  const buscarCoincidencias = async (mascota) => {
     setCargandoCoincidencias(true);
     setMascotaCoincidencias(mascota);
     setMostrarModalCoincidencias(true);
     
-    // Simulamos un pequeño delay para mostrar el loading
-    setTimeout(() => {
+    try {
+      const response = await axios.get(`/api/coincidencias/calcular/${mascota.id}`);
+      console.log("✅ Coincidencias calculadas:", response.data);
+      await cargarCoincidencias(); // Recargar la lista
+    } catch (error) {
+      console.error("❌ Error al calcular coincidencias:", error);
+    } finally {
       setCargandoCoincidencias(false);
-    }, 500);
+    }
   };
 
-  // 🆕 FUNCIÓN PARA OBTENER LAS COINCIDENCIAS DE UNA MASCOTA ESPECÍFICA
-  const obtenerCoincidenciasDeMascota = (mascotaId) => {
-    // Buscar coincidencias donde esta mascota sea la perdida O la encontrada
-    return coincidencias.filter(c => 
-      c.idMascotaPerdida === mascotaId || c.idMascotaEncontrada === mascotaId
-    );
-  };
-
-  // 🆕 FUNCIÓN PARA OBTENER DATOS DE UNA MASCOTA POR ID
   const obtenerMascotaPorId = (id) => {
     return mascotas.find(m => m.id === id);
   };
@@ -179,29 +171,25 @@ function MainApp() {
   const imagenPlaceholder = "https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
 
   const obtenerUrlImagen = (imagenesUrls) => {
-    if (!imagenesUrls || imagenesUrls.trim() === '') {
-      return imagenPlaceholder;
-    }
-    
+    if (!imagenesUrls || imagenesUrls.trim() === '') return imagenPlaceholder;
     const imagenes = imagenesUrls.split(',');
-    if (imagenes.length === 0 || !imagenes[0]) {
-      return imagenPlaceholder;
-    }
-    
-    const primeraImagen = imagenes[0].trim();
-    return `http://localhost:8081${primeraImagen}`;
+    if (imagenes.length === 0 || !imagenes[0]) return imagenPlaceholder;
+    return `http://localhost:8081${imagenes[0].trim()}`;
   };
 
   const contarImagenes = (imagenesUrls) => {
-    if (!imagenesUrls || imagenesUrls.trim() === '') {
-      return 0;
-    }
+    if (!imagenesUrls || imagenesUrls.trim() === '') return 0;
     return imagenesUrls.split(',').filter(img => img.trim() !== '').length;
+  };
+
+  const obtenerCoincidenciasDeMascota = (mascotaId) => {
+    return coincidencias.filter(c => 
+      c.idMascotaPerdida === mascotaId || c.idMascotaEncontrada === mascotaId
+    );
   };
 
   return (
     <div className="App">
-      {/* BARRA DE NAVEGACIÓN */}
       <nav className="navbar">
         <div className="navbar-brand">
           <span className="logo-icon">🐾</span>
@@ -223,7 +211,6 @@ function MainApp() {
         </div>
       </nav>
 
-      {/* HERO SECTION */}
       <header className="hero-section">
         <div className="hero-badge">SISTEMA DE BÚSQUEDA ACTIVO</div>
         <h1>MASCOTAS <span className="highlight">PERDIDAS</span><br/>EN TU SECTOR</h1>
@@ -232,12 +219,10 @@ function MainApp() {
 
       <main className="container">
         
-        {/* MODAL 1: PUBLICAR NUEVA MASCOTA */}
         {mostrarFormulario && (
           <div className="form-modal-overlay" onClick={() => setMostrarFormulario(false)}>
             <form onSubmit={handleSubmit} className="form-card" onClick={(e) => e.stopPropagation()}>
               <h2>Registrar Nuevo Reporte</h2>
-              
               <div className="form-group">
                 <label>Estado del reporte:</label>
                 <select name="tipoReporte" value={formulario.tipoReporte} onChange={handleChange}>
@@ -246,93 +231,43 @@ function MainApp() {
                   <option value="REUNIDO">Reunido con su familia</option>
                 </select>
               </div>
-              
               <input name="especie" placeholder="Especie y Nombre (Ej: Perro - Gaspar)" value={formulario.especie} onChange={handleChange} required />
               <input name="raza" placeholder="Raza o descripción" value={formulario.raza} onChange={handleChange} required />
               <input name="ubicacion" placeholder="Ubicación (Ej: Plaza de Puente Alto)" value={formulario.ubicacion} onChange={handleChange} required />
-              
               <div className="form-group">
                 <label>Fotos de la mascota (opcional):</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  multiple 
-                  onChange={handleImagenesChange}
-                  style={{ marginTop: '8px' }}
-                />
-                <small style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                  Puedes seleccionar múltiples imágenes
-                </small>
+                <input type="file" accept="image/*" multiple onChange={handleImagenesChange} style={{ marginTop: '8px' }} />
+                <small style={{ color: '#64748b', fontSize: '0.85rem' }}>Puedes seleccionar múltiples imágenes</small>
               </div>
-              
               {previewUrls.length > 0 && (
-                <div className="imagenes-preview" style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', 
-                  gap: '10px',
-                  marginTop: '10px'
-                }}>
+                <div className="imagenes-preview" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px', marginTop: '10px' }}>
                   {previewUrls.map((url, index) => (
                     <div key={index} style={{ position: 'relative' }}>
-                      <img 
-                        src={url} 
-                        alt={`Preview ${index + 1}`}
-                        style={{ 
-                          width: '100%', 
-                          height: '80px', 
-                          objectFit: 'cover', 
-                          borderRadius: '8px',
-                          border: '1px solid #cbd5e1'
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImagen(index)}
-                        style={{
-                          position: 'absolute',
-                          top: '-8px',
-                          right: '-8px',
-                          background: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '50%',
-                          width: '24px',
-                          height: '24px',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        ×
-                      </button>
+                      <img src={url} alt={`Preview ${index + 1}`} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
+                      <button type="button" onClick={() => removeImagen(index)} style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                     </div>
                   ))}
                 </div>
               )}
-              
               <button type="submit" className="btn-submit">Publicar Reporte</button>
             </form>
           </div>
         )}
 
-        {/* 🆕 MODAL 3: COINCIDENCIAS */}
+        {/* 🆕 MODAL DE COINCIDENCIAS */}
         {mostrarModalCoincidencias && mascotaCoincidencias && (
           <div className="form-modal-overlay" onClick={() => setMostrarModalCoincidencias(false)}>
             <div className="coincidencias-modal" onClick={(e) => e.stopPropagation()}>
               <button className="btn-close" onClick={() => setMostrarModalCoincidencias(false)}>✕</button>
-              
               <div className="coincidencias-header">
                 <h2>🔍 Coincidencias para {mascotaCoincidencias.especie}</h2>
                 <p className="text-muted">Mascotas que podrían ser la misma</p>
               </div>
-
               <div className="coincidencias-body">
                 {cargandoCoincidencias ? (
                   <div className="loading-coincidencias">
                     <div className="spinner"></div>
-                    <p>Buscando coincidencias...</p>
+                    <p>🔍 Calculando coincidencias...</p>
                   </div>
                 ) : (
                   <>
@@ -344,41 +279,28 @@ function MainApp() {
                     ) : (
                       <div className="coincidencias-lista">
                         {obtenerCoincidenciasDeMascota(mascotaCoincidencias.id).map(coincidencia => {
-                          // Determinar cuál es la otra mascota (la que coincide)
                           const otraMascotaId = coincidencia.idMascotaPerdida === mascotaCoincidencias.id 
                             ? coincidencia.idMascotaEncontrada 
                             : coincidencia.idMascotaPerdida;
-                          
                           const otraMascota = obtenerMascotaPorId(otraMascotaId);
-                          
                           if (!otraMascota) return null;
 
                           return (
                             <div key={coincidencia.id} className="coincidencia-card">
                               <div className="coincidencia-imagen">
-                                <img 
-                                  src={obtenerUrlImagen(otraMascota.imagenesUrls)} 
-                                  alt={otraMascota.especie}
-                                />
+                                <img src={obtenerUrlImagen(otraMascota.imagenesUrls)} alt={otraMascota.especie} />
                               </div>
                               <div className="coincidencia-info">
                                 <h3>{otraMascota.especie}</h3>
                                 <p className="coincidencia-raza">{otraMascota.raza}</p>
-                                <p className="coincidencia-ubicacion">📍 {otraMascota.ubicacion}</p>
+                                <p className="coincidencia-ubicacion"> {otraMascota.ubicacion}</p>
                                 <div className="coincidencia-similitud">
                                   <div className="similitud-bar">
-                                    <div 
-                                      className="similitud-fill" 
-                                      style={{ width: `${coincidencia.nivelSimilitud}%` }}
-                                    ></div>
+                                    <div className="similitud-fill" style={{ width: `${coincidencia.nivelSimilitud}%` }}></div>
                                   </div>
-                                  <span className="similitud-texto">
-                                    {coincidencia.nivelSimilitud}% de similitud
-                                  </span>
+                                  <span className="similitud-texto">{coincidencia.nivelSimilitud}% de similitud</span>
                                 </div>
-                                <span className={`coincidencia-badge status-${otraMascota.tipoReporte}`}>
-                                  {otraMascota.tipoReporte}
-                                </span>
+                                <span className={`coincidencia-badge status-${otraMascota.tipoReporte}`}>{otraMascota.tipoReporte}</span>
                               </div>
                             </div>
                           );
@@ -388,73 +310,47 @@ function MainApp() {
                   </>
                 )}
               </div>
-
               <div className="coincidencias-footer">
-                <button 
-                  className="btn-cerrar-coincidencias" 
-                  onClick={() => setMostrarModalCoincidencias(false)}
-                >
-                  Cerrar
-                </button>
+                <button className="btn-cerrar-coincidencias" onClick={() => setMostrarModalCoincidencias(false)}>Cerrar</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* MODAL 2: REPORTAR ENCUENTRO DE UNA MASCOTA */}
         {mascotaEncuentro && (
           <div className="form-modal-overlay" onClick={cerrarModalEncuentro}>
             <div className="encuentro-card" onClick={(e) => e.stopPropagation()}>
               <button className="btn-close" onClick={cerrarModalEncuentro}>✕</button>
-              
               <div className="encuentro-header">
-                <img 
-                  src={obtenerUrlImagen(mascotaEncuentro.imagenesUrls)} 
-                  alt="Mascota" 
-                  className="encuentro-img" 
-                />
+                <img src={obtenerUrlImagen(mascotaEncuentro.imagenesUrls)} alt="Mascota" className="encuentro-img" />
                 <div className="encuentro-info-header">
                   <span className="badge-encontrada">🎉 ¡MASCOTA ENCONTRADA!</span>
                   <h2>{mascotaEncuentro.especie}</h2>
                   <p>🦴 {mascotaEncuentro.raza} • 📍 {mascotaEncuentro.ubicacion}</p>
                 </div>
               </div>
-
               <div className="encuentro-body">
                 <h3>Completa los datos del hallazgo</h3>
                 <p className="text-muted">Solo necesitamos algunos datos para verificar el encuentro.</p>
-
                 <div className="upload-section">
                   <div className="upload-header">
                     <label>FOTO DE PRUEBA (OPCIONAL)</label>
                     <span className="upload-counter">{fotoEncuentro ? "1" : "0"} / 1</span>
                   </div>
                   <p className="upload-subtext">Sube una foto actual para verificar que es la misma mascota</p>
-                  
                   <label className="upload-box" style={{ padding: fotoEncuentro ? '0' : '20px', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      style={{ display: 'none' }} 
-                      onChange={handleImagenChange}
-                    />
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImagenChange} />
                     {fotoEncuentro ? (
-                      <img 
-                        src={fotoEncuentro} 
-                        alt="Vista previa del hallazgo" 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} 
-                      />
+                      <img src={fotoEncuentro} alt="Vista previa" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     ) : (
-                      <span>📷 Agregar</span>
+                      <span> Agregar</span>
                     )}
                   </label>
                 </div>
-
                 <div className="form-group">
                   <label>¿Dónde lo encontraste? *</label>
                   <textarea placeholder="Ej: Lo encontré en la plaza cerca de mi casa..."></textarea>
                 </div>
-
                 <h3 className="section-title">Tu información de contacto</h3>
                 <div className="form-group">
                   <label>Tu nombre *</label>
@@ -464,13 +360,11 @@ function MainApp() {
                   <label>Teléfono / WhatsApp *</label>
                   <input type="text" placeholder="+56 9 1234 5678" />
                 </div>
-
                 <div className="owner-contact">
-                  <p className="owner-title">📞 Contacto del dueño:</p>
+                  <p className="owner-title"> Contacto del dueño:</p>
                   <p className="owner-phone">950071932</p>
                 </div>
               </div>
-
               <div className="encuentro-footer">
                 <button className="btn-cancelar" onClick={cerrarModalEncuentro}>Cancelar</button>
                 <button className="btn-confirmar" onClick={handleConfirmarEncuentro}>Confirmar encuentro</button>
@@ -479,29 +373,20 @@ function MainApp() {
           </div>
         )}
 
-        {/* TABS DE FILTRADO PRINCIPALES */}
         <div className="filtros-bar">
-          <div className={`filtro-tab ${filtroActivo === 'PERDIDA' ? 'active' : ''}`} onClick={() => setFiltroActivo('PERDIDA')}>
-            🔍 Perdidos
-          </div>
-          <div className={`filtro-tab ${filtroActivo === 'ENCONTRADA' ? 'active' : ''}`} onClick={() => setFiltroActivo('ENCONTRADA')}>
-            🧡 Buscan a su Familia
-          </div>
-          <div className={`filtro-tab ${filtroActivo === 'REUNIDO' ? 'active' : ''}`} onClick={() => setFiltroActivo('REUNIDO')}>
-            🐾 Reunidos
-          </div>
+          <div className={`filtro-tab ${filtroActivo === 'PERDIDA' ? 'active' : ''}`} onClick={() => setFiltroActivo('PERDIDA')}>🔍 Perdidos</div>
+          <div className={`filtro-tab ${filtroActivo === 'ENCONTRADA' ? 'active' : ''}`} onClick={() => setFiltroActivo('ENCONTRADA')}> Buscan a su Familia</div>
+          <div className={`filtro-tab ${filtroActivo === 'REUNIDO' ? 'active' : ''}`} onClick={() => setFiltroActivo('REUNIDO')}>🐾 Reunidos</div>
         </div>
 
-        {/* FILTROS AVANZADOS */}
         <div className="advanced-filters">
           <div className="search-row">
             <label>Buscar mascotas</label>
             <div className="search-input-wrapper">
-              <span>🔍</span>
+              <span></span>
               <input type="text" placeholder="Nombre, raza, ubicación, descripción..." />
             </div>
           </div>
-          
           <div className="dropdowns-row">
             <div className="filter-group">
               <label>Especie</label>
@@ -520,7 +405,6 @@ function MainApp() {
               <select><option>Todos</option></select>
             </div>
           </div>
-
           <div className="dropdowns-row" style={{ marginTop: '15px' }}>
             <div className="filter-group" style={{ maxWidth: '25%' }}>
               <label>Comuna</label>
@@ -535,7 +419,6 @@ function MainApp() {
           </div>
         </div>
 
-        {/* LISTADO DE TARJETAS */}
         <section className="listado">
           <div className="listado-header">
             <h3>{filtroActivo === 'REUNIDO' ? 'Historias felices' : 'Últimos reportes'}</h3>
@@ -547,7 +430,6 @@ function MainApp() {
           ) : (
             <div className="mascotas-grid">
               {mascotasFiltradas.length === 0 && <p>No hay reportes en esta categoría por ahora.</p>}
-              
               {mascotasFiltradas.map(m => {
                 const esReunido = m.tipoReporte === 'REUNIDO';
                 const cantidadImagenes = contarImagenes(m.imagenesUrls);
@@ -558,13 +440,7 @@ function MainApp() {
                   <div key={m.id} className={`mascota-card ${esReunido ? 'is-reunido' : ''}`}>
                     <div className="card-image-container">
                       <img src={primeraImagen} alt="Mascota" className="card-image" />
-                      
-                      {cantidadImagenes > 1 && (
-                        <span className="gallery-indicator">
-                          📷 {cantidadImagenes} fotos
-                        </span>
-                      )}
-                      
+                      {cantidadImagenes > 1 && <span className="gallery-indicator">📷 {cantidadImagenes} fotos</span>}
                       {esReunido ? (
                         <>
                           <span className="badge-reunido-top">REUNIDO CON SU DUEÑO</span>
@@ -574,27 +450,17 @@ function MainApp() {
                         <span className={`card-badge status-${m.tipoReporte}`}>{m.tipoReporte}</span>
                       )}
                     </div>
-                    
                     <div className="card-content">
                       <h3 className={`mascota-titulo ${esReunido ? 'reunido-text' : ''}`}>{m.especie}</h3>
                       <p className="mascota-raza">{m.raza}</p>
-                      <div className="mascota-ubicacion">
-                        📍 <span>{m.ubicacion}</span>
-                      </div>
+                      <div className="mascota-ubicacion">📍 <span>{m.ubicacion}</span></div>
                     </div>
-                    
                     {!esReunido && (
                       <div className="card-footer">
-                        {/* 🆕 BOTÓN DE COINCIDENCIAS */}
-                        <button 
-                          className="btn-coincidencias" 
-                          onClick={() => buscarCoincidencias(m)}
-                        >
+                        <button className="btn-coincidencias" onClick={() => buscarCoincidencias(m)}>
                           🔍 Ver Coincidencias {tieneCoincidencias && `(${obtenerCoincidenciasDeMascota(m.id).length})`}
                         </button>
-                        <button className="btn-reportar" onClick={() => setMascotaEncuentro(m)}>
-                          REPORTAR ENCUENTRO
-                        </button>
+                        <button className="btn-reportar" onClick={() => setMascotaEncuentro(m)}>REPORTAR ENCUENTRO</button>
                       </div>
                     )}
                   </div>
@@ -605,7 +471,6 @@ function MainApp() {
         </section>
       </main>
 
-      {/* FOOTER */}
       <footer className="footer">
         <div className="footer-content">
           <div className="footer-column">
@@ -616,12 +481,9 @@ function MainApp() {
                 <span>Red de Rescate 2026</span>
               </div>
             </div>
-            <p className="footer-description">
-              Plataforma dedicada a la búsqueda y rescate de mascotas en la comuna de Puente Alto y sus alrededores.
-            </p>
+            <p className="footer-description">Plataforma dedicada a la búsqueda y rescate de mascotas en la comuna de Puente Alto y sus alrededores.</p>
             <div className="footer-illustration">🤝🐾</div>
           </div>
-
           <div className="footer-column text-center">
             <h4 className="footer-title">EQUIPO DESARROLLADOR</h4>
             <p className="footer-subtitle">Desarrollado con ❤️ por</p>
@@ -632,7 +494,6 @@ function MainApp() {
             </ul>
             <p className="footer-copyright">PARA AYUDAR A LA COMUNIDAD • © 2026</p>
           </div>
-
           <div className="footer-column">
             <h4 className="footer-title">EN PRENSA</h4>
             <div className="prensa-tags">
@@ -646,9 +507,7 @@ function MainApp() {
             </div>
           </div>
         </div>
-
         <div className="footer-divider"></div>
-
         <div className="footer-bottom">
           <button className="btn-footer-contacto">✉️ Contacto</button>
           <button className="btn-footer-acopio">🔥 Puntos de Acopio ↗</button>

@@ -899,7 +899,6 @@ body {
 /* =========================================
    10. MODAL DE COINCIDENCIAS
 ========================================= */
-
 .coincidencias-modal {
   background: white;
   width: 90%;
@@ -1080,7 +1079,6 @@ body {
   transform: translateY(-2px);
 }
 
-/* Botón de coincidencias en las tarjetas */
 .btn-coincidencias {
   width: 100%;
   padding: 10px;
@@ -1100,12 +1098,10 @@ body {
   transform: translateY(-2px);
 }
 
-/* Responsive */
 @media (max-width: 640px) {
   .coincidencia-card {
     flex-direction: column;
   }
-  
   .coincidencia-imagen {
     width: 100%;
     height: 200px;
