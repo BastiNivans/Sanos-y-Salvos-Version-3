@@ -5,6 +5,10 @@ import Login from './components/Login';
 import Register from './components/Register';
 import './App.css';
 
+// 🗺️ IMPORTS PARA OPENSTREETMAP
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+
 const ProtectedRoute = ({ children }) => {
   const isAuth = localStorage.getItem('usuarioLogueado');
   if (!isAuth) return <Navigate to="/login" replace />;
@@ -36,6 +40,10 @@ function MainApp() {
   // Estados para menú de usuario
   const [mostrarMenuUsuario, setMostrarMenuUsuario] = useState(false);
   const [usuarioEmail, setUsuarioEmail] = useState('');
+
+  // 🗺️ ESTADOS PARA EL MAPA
+  const [mostrarMapa, setMostrarMapa] = useState(false);
+  const [mascotasParaMapa, setMascotasParaMapa] = useState([]);
 
   const [formulario, setFormulario] = useState({
     tipoReporte: 'PERDIDA',
@@ -236,6 +244,19 @@ function MainApp() {
     );
   };
 
+  // 🗺️ FUNCIÓN PARA CARGAR MASCOTAS EN EL MAPA
+  const cargarMascotasEnMapa = async () => {
+    try {
+      // Llamamos al microservicio de geolocalización (puerto 8083)
+      const response = await axios.get('http://localhost:8083/api/geolocalizacion/todas');
+      setMascotasParaMapa(response.data);
+      setMostrarMapa(true);
+    } catch (error) {
+      console.error("Error al cargar el mapa:", error);
+      alert("❌ Error al cargar el mapa. Asegúrate de que el microservicio de geolocalización (puerto 8083) esté corriendo.");
+    }
+  };
+
   // Opciones dinámicas para los filtros
   const opcionesEspecie = useMemo(() => {
     const especies = [...new Set(mascotas.map(m => {
@@ -302,6 +323,23 @@ function MainApp() {
         <div className="navbar-actions">
           <button className="btn-publicar" onClick={() => setMostrarFormulario(!mostrarFormulario)}>
             {mostrarFormulario ? "CANCELAR" : "+ PUBLICAR MASCOTA"}
+          </button>
+          
+          {/* 🗺️ BOTÓN PARA VER MAPA */}
+          <button 
+            onClick={cargarMascotasEnMapa}
+            style={{
+              background: '#10b981',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              marginLeft: '10px'
+            }}
+          >
+            🗺️ Ver Mapa
           </button>
           
           {/* MENÚ DE USUARIO */}
@@ -606,6 +644,79 @@ function MainApp() {
               <div className="encuentro-footer">
                 <button className="btn-cancelar" onClick={cerrarModalEncuentro}>Cancelar</button>
                 <button className="btn-confirmar" onClick={handleConfirmarEncuentro}>Confirmar encuentro</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🗺️ MODAL 5: MAPA DE OPENSTREETMAP */}
+        {mostrarMapa && (
+          <div className="form-modal-overlay" onClick={() => setMostrarMapa(false)}>
+            <div className="mapa-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="btn-close" onClick={() => setMostrarMapa(false)}>✕</button>
+              
+              <div className="mapa-header">
+                <h2>📍 Mapa de Mascotas</h2>
+                <p>{mascotasParaMapa.length} mascotas registradas</p>
+              </div>
+
+              <div className="mapa-container">
+                <MapContainer 
+                  center={[-33.6119, -70.5746]} // Centro de Puente Alto, Chile
+                  zoom={13}
+                  style={{ height: '100%', width: '100%' }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  
+                  {mascotasParaMapa.map(mascota => {
+                    // Validar que tenga coordenadas
+                    if (!mascota.latitud || !mascota.longitud) return null;
+                    
+                    // Color según tipo de reporte
+                    const color = mascota.tipoReporte === 'PERDIDA' ? '#ef4444' : 
+                                 mascota.tipoReporte === 'ENCONTRADA' ? '#f59e0b' : '#10b981';
+                    
+                    return (
+                      <CircleMarker
+                        key={mascota.id}
+                        center={[mascota.latitud, mascota.longitud]}
+                        radius={12}
+                        fillColor={color}
+                        color="#fff"
+                        weight={2}
+                        opacity={1}
+                        fillOpacity={0.8}
+                      >
+                        <Popup>
+                          <div className="popup-mascota">
+                            <h3>{mascota.especie}</h3>
+                            <p><strong>Raza:</strong> {mascota.raza}</p>
+                            <p><strong>Estado:</strong> {mascota.tipoReporte}</p>
+                            <p><strong>Ubicación:</strong> {mascota.direccionTexto}</p>
+                          </div>
+                        </Popup>
+                      </CircleMarker>
+                    );
+                  })}
+                </MapContainer>
+              </div>
+
+              <div className="mapa-leyenda">
+                <div className="leyenda-item">
+                  <span className="leyenda-color" style={{ background: '#ef4444' }}></span>
+                  <span>Perdida</span>
+                </div>
+                <div className="leyenda-item">
+                  <span className="leyenda-color" style={{ background: '#f59e0b' }}></span>
+                  <span>Encontrada</span>
+                </div>
+                <div className="leyenda-item">
+                  <span className="leyenda-color" style={{ background: '#10b981' }}></span>
+                  <span>Reunido</span>
+                </div>
               </div>
             </div>
           </div>

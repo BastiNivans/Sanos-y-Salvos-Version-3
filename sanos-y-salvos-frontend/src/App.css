@@ -1449,3 +1449,184 @@ body {
 .btn-cerrar-sesion:hover {
   background: #fef2f2;
 }
+
+
+/* =========================================
+   13. MAPA DE GEOLOCALIZACIÓN (OpenStreetMap)
+========================================= */
+
+.mapa-modal {
+  width: 90%;
+  max-width: 1000px;
+  height: 80vh;
+  background: white;
+  border-radius: 12px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideDown 0.3s ease;
+}
+
+.mapa-modal .btn-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 1000;
+  background: white;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.mapa-modal .btn-close:hover {
+  background: #f1f5f9;
+  transform: scale(1.1);
+}
+
+.mapa-header {
+  padding: 20px 30px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.mapa-header h2 {
+  margin: 0 0 5px 0;
+  color: #1e293b;
+  font-size: 1.5rem;
+}
+
+.mapa-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.mapa-container {
+  flex-grow: 1;
+  position: relative;
+  width: 100%;
+}
+
+/* Asegurar que Leaflet ocupe todo el espacio */
+.mapa-container .leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+/* Estilos del popup del mapa */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.leaflet-popup-content {
+  margin: 12px 15px;
+  font-family: inherit;
+}
+
+.popup-mascota h3 {
+  margin: 0 0 8px 0;
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.popup-mascota p {
+  margin: 4px 0;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.popup-mascota strong {
+  color: #1e293b;
+}
+
+/* Leyenda del mapa */
+.mapa-leyenda {
+  padding: 15px 30px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.leyenda-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px currentColor;
+}
+
+/* Botón Ver Mapa en la navbar */
+.btn-mapa {
+  background: #10b981 !important;
+  color: white !important;
+  border: none !important;
+  padding: 10px 20px !important;
+  border-radius: 6px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  margin-left: 10px !important;
+  transition: all 0.3s ease !important;
+}
+
+.btn-mapa:hover {
+  background: #059669 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mapa-modal {
+    width: 95%;
+    height: 85vh;
+  }
+  
+  .mapa-leyenda {
+    gap: 15px;
+    padding: 10px 15px;
+  }
+  
+  .leyenda-item {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mapa-modal {
+    width: 98%;
+    height: 90vh;
+  }
+  
+  .mapa-header {
+    padding: 15px 20px;
+  }
+  
+  .mapa-header h2 {
+    font-size: 1.2rem;
+  }
+}
