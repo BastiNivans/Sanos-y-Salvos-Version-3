@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Login from './components/Login';
-import Register from './components/Register'; // 🆕 Import del componente Register
+import Register from './components/Register';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -17,7 +17,6 @@ function MainApp() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false); 
   const [mascotaEncuentro, setMascotaEncuentro] = useState(null); 
   
-  // ESTADO PARA LA IMAGEN: Guarda la URL temporal de la foto subida
   const [fotoEncuentro, setFotoEncuentro] = useState(null);
   
   const [filtroActivo, setFiltroActivo] = useState('PERDIDA');
@@ -28,6 +27,9 @@ function MainApp() {
     raza: '',
     ubicacion: ''
   });
+  
+  const [imagenesMascota, setImagenesMascota] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
   
   const navigate = useNavigate();
 
@@ -51,15 +53,58 @@ function MainApp() {
     setFormulario({ ...formulario, [e.target.name]: e.target.value });
   };
 
+  const handleImagenesChange = (e) => {
+    const files = Array.from(e.target.files);
+    setImagenesMascota(files);
+    
+    const urls = files.map(file => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+  };
+
+  const removeImagen = (index) => {
+    const nuevasImagenes = imagenesMascota.filter((_, i) => i !== index);
+    const nuevosUrls = previewUrls.filter((_, i) => i !== index);
+    setImagenesMascota(nuevasImagenes);
+    setPreviewUrls(nuevosUrls);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    const convertirABase64 = (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+      });
+    };
+
     try {
-      await axios.post('/api/mascotas', formulario);
+      const imagenesBase64 = [];
+      for (const imagen of imagenesMascota) {
+        const base64 = await convertirABase64(imagen);
+        imagenesBase64.push(base64);
+      }
+
+      const datosMascota = {
+        especie: formulario.especie,
+        raza: formulario.raza,
+        tipoReporte: formulario.tipoReporte,
+        ubicacion: formulario.ubicacion,
+        imagenesBase64: imagenesBase64
+      };
+
+      await axios.post('/api/mascotas', datosMascota);
+      
       alert("✅ ¡Mascota registrada exitosamente!");
       setFormulario({ tipoReporte: 'PERDIDA', especie: '', raza: '', ubicacion: '' });
+      setImagenesMascota([]);
+      setPreviewUrls([]);
       setMostrarFormulario(false); 
       cargarMascotas();
     } catch (error) {
+      console.error("Error al guardar:", error);
       alert("❌ Error al guardar la mascota.");
     }
   };
@@ -69,7 +114,6 @@ function MainApp() {
     navigate('/login');
   };
 
-  // FUNCIÓN PARA CAPTURAR LA IMAGEN: Crea la ruta en memoria para mostrarla al instante
   const handleImagenChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -80,7 +124,7 @@ function MainApp() {
 
   const cerrarModalEncuentro = () => {
     setMascotaEncuentro(null);
-    setFotoEncuentro(null); // Limpia la foto al cerrar
+    setFotoEncuentro(null);
   };
 
   const handleConfirmarEncuentro = () => {
@@ -90,6 +134,31 @@ function MainApp() {
 
   const mascotasFiltradas = mascotas.filter(m => m.tipoReporte === filtroActivo);
   const imagenPlaceholder = "https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
+
+  // ✅ FUNCIÓN HELPER PARA OBTENER LA URL DE LA IMAGEN
+  const obtenerUrlImagen = (imagenesUrls) => {
+    if (!imagenesUrls || imagenesUrls.trim() === '') {
+      return imagenPlaceholder;
+    }
+    
+    // Dividir por coma y tomar la primera imagen
+    const imagenes = imagenesUrls.split(',');
+    if (imagenes.length === 0 || !imagenes[0]) {
+      return imagenPlaceholder;
+    }
+    
+    // Limpiar espacios y construir URL completa
+    const primeraImagen = imagenes[0].trim();
+    return `http://localhost:8081${primeraImagen}`;
+  };
+
+  // ✅ FUNCIÓN HELPER PARA CONTAR IMÁGENES
+  const contarImagenes = (imagenesUrls) => {
+    if (!imagenesUrls || imagenesUrls.trim() === '') {
+      return 0;
+    }
+    return imagenesUrls.split(',').filter(img => img.trim() !== '').length;
+  };
 
   return (
     <div className="App">
@@ -129,6 +198,7 @@ function MainApp() {
           <div className="form-modal-overlay" onClick={() => setMostrarFormulario(false)}>
             <form onSubmit={handleSubmit} className="form-card" onClick={(e) => e.stopPropagation()}>
               <h2>Registrar Nuevo Reporte</h2>
+              
               <div className="form-group">
                 <label>Estado del reporte:</label>
                 <select name="tipoReporte" value={formulario.tipoReporte} onChange={handleChange}>
@@ -137,9 +207,72 @@ function MainApp() {
                   <option value="REUNIDO">Reunido con su familia</option>
                 </select>
               </div>
+              
               <input name="especie" placeholder="Especie y Nombre (Ej: Perro - Gaspar)" value={formulario.especie} onChange={handleChange} required />
               <input name="raza" placeholder="Raza o descripción" value={formulario.raza} onChange={handleChange} required />
               <input name="ubicacion" placeholder="Ubicación (Ej: Plaza de Puente Alto)" value={formulario.ubicacion} onChange={handleChange} required />
+              
+              <div className="form-group">
+                <label>Fotos de la mascota (opcional):</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  onChange={handleImagenesChange}
+                  style={{ marginTop: '8px' }}
+                />
+                <small style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                  Puedes seleccionar múltiples imágenes
+                </small>
+              </div>
+              
+              {previewUrls.length > 0 && (
+                <div className="imagenes-preview" style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', 
+                  gap: '10px',
+                  marginTop: '10px'
+                }}>
+                  {previewUrls.map((url, index) => (
+                    <div key={index} style={{ position: 'relative' }}>
+                      <img 
+                        src={url} 
+                        alt={`Preview ${index + 1}`}
+                        style={{ 
+                          width: '100%', 
+                          height: '80px', 
+                          objectFit: 'cover', 
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImagen(index)}
+                        style={{
+                          position: 'absolute',
+                          top: '-8px',
+                          right: '-8px',
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '24px',
+                          height: '24px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               <button type="submit" className="btn-submit">Publicar Reporte</button>
             </form>
           </div>
@@ -152,7 +285,12 @@ function MainApp() {
               <button className="btn-close" onClick={cerrarModalEncuentro}>✕</button>
               
               <div className="encuentro-header">
-                <img src={imagenPlaceholder} alt="Mascota" className="encuentro-img" />
+                {/* ✅ USAR FUNCIÓN HELPER PARA OBTENER IMAGEN */}
+                <img 
+                  src={obtenerUrlImagen(mascotaEncuentro.imagenesUrls)} 
+                  alt="Mascota" 
+                  className="encuentro-img" 
+                />
                 <div className="encuentro-info-header">
                   <span className="badge-encontrada">🎉 ¡MASCOTA ENCONTRADA!</span>
                   <h2>{mascotaEncuentro.especie}</h2>
@@ -164,7 +302,6 @@ function MainApp() {
                 <h3>Completa los datos del hallazgo</h3>
                 <p className="text-muted">Solo necesitamos algunos datos para verificar el encuentro.</p>
 
-                {/* SECCIÓN DE SUBIDA DE IMAGEN */}
                 <div className="upload-section">
                   <div className="upload-header">
                     <label>FOTO DE PRUEBA (OPCIONAL)</label>
@@ -172,7 +309,6 @@ function MainApp() {
                   </div>
                   <p className="upload-subtext">Sube una foto actual para verificar que es la misma mascota</p>
                   
-                  {/* El label actúa como botón contenedor del input oculto */}
                   <label className="upload-box" style={{ padding: fotoEncuentro ? '0' : '20px', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <input 
                       type="file" 
@@ -292,11 +428,20 @@ function MainApp() {
               
               {mascotasFiltradas.map(m => {
                 const esReunido = m.tipoReporte === 'REUNIDO';
+                const cantidadImagenes = contarImagenes(m.imagenesUrls);
+                const primeraImagen = obtenerUrlImagen(m.imagenesUrls);
 
                 return (
                   <div key={m.id} className={`mascota-card ${esReunido ? 'is-reunido' : ''}`}>
                     <div className="card-image-container">
-                      <img src={imagenPlaceholder} alt="Mascota" className="card-image" />
+                      {/* ✅ USAR FUNCIÓN HELPER PARA OBTENER IMAGEN */}
+                      <img src={primeraImagen} alt="Mascota" className="card-image" />
+                      
+                      {cantidadImagenes > 1 && (
+                        <span className="gallery-indicator">
+                          📷 {cantidadImagenes} fotos
+                        </span>
+                      )}
                       
                       {esReunido ? (
                         <>
@@ -389,7 +534,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} /> {/* 🆕 Ruta de registro */}
+        <Route path="/register" element={<Register />} />
         <Route path="/" element={<ProtectedRoute><MainApp /></ProtectedRoute>} />
       </Routes>
     </Router>

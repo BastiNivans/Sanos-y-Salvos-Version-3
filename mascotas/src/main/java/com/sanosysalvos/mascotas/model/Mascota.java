@@ -17,7 +17,11 @@ public class Mascota {
     private String tipoReporte;
     
     private String ubicacion;
+    
+    @Column(name = "imagenes_urls", length = 10000) // Aumentamos el tamaño para Base64
+    private String imagenesUrls;
 
+    // Getters y Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getEspecie() { return especie; }
@@ -28,4 +32,6 @@ public class Mascota {
     public void setTipoReporte(String tipoReporte) { this.tipoReporte = tipoReporte; }
     public String getUbicacion() { return ubicacion; }
     public void setUbicacion(String ubicacion) { this.ubicacion = ubicacion; }
+    public String getImagenesUrls() { return imagenesUrls; }
+    public void setImagenesUrls(String imagenesUrls) { this.imagenesUrls = imagenesUrls; }
 }
