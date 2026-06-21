@@ -8,6 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,9 +25,21 @@ public class MascotaController {
     private MascotaRepository mascotaRepository;
 
     @Autowired
-    private GeocodificacionService geocodificacionService; // 🆕 Inyectar servicio de geocodificación
+    private GeocodificacionService geocodificacionService;
 
     private final RestTemplate restTemplate = new RestTemplate();
+    
+    // 🆕 Carpeta donde se guardarán las imágenes
+    private static final String UPLOAD_DIR = "uploads/";
+
+    public MascotaController() {
+        // Crear carpeta de uploads si no existe
+        File uploadDir = new File(UPLOAD_DIR);
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
+            System.out.println("📁 Carpeta uploads creada: " + uploadDir.getAbsolutePath());
+        }
+    }
 
     @GetMapping
     public List<Mascota> obtenerTodas() {
@@ -40,26 +55,66 @@ public class MascotaController {
     @PostMapping
     public ResponseEntity<?> registrarMascota(@RequestBody Map<String, Object> mascotaDTO) {
         try {
-            // 1. Crear y guardar la mascota
+            System.out.println("📥 Recibiendo mascota...");
+            System.out.println("📥 Datos: " + mascotaDTO.keySet());
+            
             Mascota mascota = new Mascota();
             mascota.setEspecie((String) mascotaDTO.get("especie"));
             mascota.setRaza((String) mascotaDTO.get("raza"));
             mascota.setTipoReporte((String) mascotaDTO.get("tipoReporte"));
             mascota.setUbicacion((String) mascotaDTO.get("ubicacion"));
             
-            // Manejar imágenes (si vienen en Base64)
+            // 🆕 GUARDAR IMÁGENES
             if (mascotaDTO.containsKey("imagenesBase64")) {
                 List<String> imagenesBase64 = (List<String>) mascotaDTO.get("imagenesBase64");
-                // Aquí deberías guardar las imágenes y obtener las URLs
-                // Por ahora, dejamos esto como placeholder
-                mascota.setImagenesUrls(""); // TODO: Implementar guardado de imágenes
+                System.out.println("📸 Cantidad de imágenes: " + imagenesBase64.size());
+                
+                StringBuilder imagenesUrls = new StringBuilder();
+                
+                for (int i = 0; i < imagenesBase64.size(); i++) {
+                    String base64 = imagenesBase64.get(i);
+                    System.out.println("📸 Procesando imagen " + (i+1) + "...");
+                    
+                    // Eliminar el prefijo "data:image/jpeg;base64," si existe
+                    if (base64.contains(",")) {
+                        base64 = base64.split(",")[1];
+                    }
+                    
+                    // Decodificar Base64 a bytes
+                    byte[] imageBytes = Base64.getDecoder().decode(base64);
+                    
+                    // Generar nombre único para la imagen
+                    String fileName = "mascota_" + System.currentTimeMillis() + "_" + i + ".jpg";
+                    String filePath = UPLOAD_DIR + fileName;
+                    
+                    // Guardar archivo en el servidor
+                    try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                        fos.write(imageBytes);
+                        System.out.println("✅ Imagen guardada: " + filePath);
+                    } catch (Exception e) {
+                        System.err.println("❌ Error al guardar imagen: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                    
+                    // Agregar URL a la lista (separada por comas)
+                    if (imagenesUrls.length() > 0) {
+                        imagenesUrls.append(",");
+                    }
+                    imagenesUrls.append("/uploads/" + fileName);
+                }
+                
+                mascota.setImagenesUrls(imagenesUrls.toString());
+                System.out.println("📸 URLs guardadas: " + mascota.getImagenesUrls());
+            } else {
+                System.out.println("⚠️ No se recibieron imágenes");
+                mascota.setImagenesUrls("");
             }
             
             // Guardar mascota en la BD
             Mascota mascotaGuardada = mascotaRepository.save(mascota);
             System.out.println("✅ Mascota guardada con ID: " + mascotaGuardada.getId());
 
-            // 2. 🆕 GEOCODIFICAR LA DIRECCIÓN
+            // 🗺️ GEOCODIFICAR LA DIRECCIÓN
             String ubicacionTexto = mascotaGuardada.getUbicacion();
             if (ubicacionTexto != null && !ubicacionTexto.isEmpty()) {
                 System.out.println("🗺️ Geocodificando dirección: " + ubicacionTexto);
@@ -67,7 +122,7 @@ public class MascotaController {
                 GeocodificacionService.CoordenadasDTO coordenadas = 
                     geocodificacionService.geocodificarDireccion(ubicacionTexto);
                 
-                // 3. 🆕 ENVIAR COORDENADAS AL MICROSERVICIO DE GEOLOCALIZACIÓN (8083)
+                // 🗺️ ENVIAR COORDENADAS AL MICROSERVICIO DE GEOLOCALIZACIÓN (8083)
                 try {
                     Map<String, Object> datosGeolocalizacion = new HashMap<>();
                     datosGeolocalizacion.put("idMascota", mascotaGuardada.getId());
@@ -78,7 +133,6 @@ public class MascotaController {
                     datosGeolocalizacion.put("longitud", coordenadas.getLongitud());
                     datosGeolocalizacion.put("direccionTexto", ubicacionTexto);
                     
-                    // Llamar al microservicio de geolocalización
                     restTemplate.postForObject(
                         "http://localhost:8083/api/geolocalizacion/registrar",
                         datosGeolocalizacion,
@@ -89,7 +143,6 @@ public class MascotaController {
                         coordenadas.getLatitud() + ", lon: " + coordenadas.getLongitud() + ")");
                 } catch (Exception e) {
                     System.err.println("⚠️ Error al registrar en geolocalización: " + e.getMessage());
-                    // No fallar todo el proceso si falla la geolocalización
                 }
             }
             
@@ -97,6 +150,7 @@ public class MascotaController {
             
         } catch (Exception e) {
             System.err.println("❌ Error al registrar mascota: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
