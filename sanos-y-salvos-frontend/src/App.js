@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import axios from 'axios';
 import Login from './components/Login';
 import Register from './components/Register';
+import Contacto from './components/Contacto';
 import './App.css';
 
 // 🗺️ IMPORTS PARA OPENSTREETMAP
@@ -363,9 +364,7 @@ function MainApp() {
           </div>
         </div>
         <ul className="navbar-links">
-          <li><a href="#voluntariado">VOLUNTARIADO</a></li>
           <li className="active"><a href="#perdidas">MASCOTAS PERDIDAS</a></li>
-          <li><a href="#adopciones">ADOPCIONES</a></li>
         </ul>
         <div className="navbar-actions">
           <button className="btn-publicar" onClick={() => setMostrarFormulario(!mostrarFormulario)}>
@@ -1014,7 +1013,7 @@ function MainApp() {
         </div>
         <div className="footer-divider"></div>
         <div className="footer-bottom">
-          <button className="btn-footer-contacto">✉️ Contacto</button>
+          <button className="btn-footer-contacto" onClick={() => navigate('/contacto')}>✉️ Contacto</button>
           <button className="btn-footer-acopio">🔥 Puntos de Acopio ↗</button>
         </div>
       </footer>
@@ -1028,6 +1027,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+          <Route path="/contacto" element={<Contacto />} /> {}
         <Route path="/" element={<ProtectedRoute><MainApp /></ProtectedRoute>} />
       </Routes>
     </Router>
