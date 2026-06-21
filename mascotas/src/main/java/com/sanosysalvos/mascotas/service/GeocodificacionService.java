@@ -2,7 +2,8 @@ package com.sanosysalvos.mascotas.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class GeocodificacionService {
@@ -19,24 +20,14 @@ public class GeocodificacionService {
             // Agregar "Chile" para mejorar la precisión
             String direccionCompleta = direccion + ", Chile";
             
-            String url = UriComponentsBuilder.fromHttpUrl(NOMINATIM_URL)
-                .queryParam("q", direccionCompleta)
-                .queryParam("format", "json")
-                .queryParam("limit", "1")
-                .toUriString();
+            // 🆕 Construir URL manualmente (más compatible)
+            String direccionCodificada = URLEncoder.encode(direccionCompleta, StandardCharsets.UTF_8.toString());
+            String url = NOMINATIM_URL + "?q=" + direccionCodificada + "&format=json&limit=1";
 
-            // Agregar header User-Agent (requisito de Nominatim)
-            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-            headers.set("User-Agent", "SanosYSalvosApp/1.0 (tu-email@ejemplo.com)");
-            
-            org.springframework.http.HttpEntity<String> entity = new org.springframework.http.HttpEntity<>(headers);
-            
-            GeocodificacionResponse[] response = restTemplate.exchange(
-                url, 
-                org.springframework.http.HttpMethod.GET, 
-                entity, 
-                GeocodificacionResponse[].class
-            ).getBody();
+            System.out.println("🌐 Consultando Nominatim: " + url);
+
+            // Hacer la petición
+            GeocodificacionResponse[] response = restTemplate.getForObject(url, GeocodificacionResponse[].class);
             
             if (response != null && response.length > 0) {
                 CoordenadasDTO coordenadas = new CoordenadasDTO();
@@ -52,6 +43,7 @@ public class GeocodificacionService {
             
         } catch (Exception e) {
             System.err.println("❌ Error al geocodificar: " + e.getMessage());
+            e.printStackTrace();
             return obtenerCoordenadasPorDefecto();
         }
     }
