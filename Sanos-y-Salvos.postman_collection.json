@@ -1,0 +1,405 @@
+{
+  "info": {
+    "name": "Sanos y Salvos - API REST",
+    "description": "Colección de endpoints del BFF y los 3 microservicios (mascotas, coincidencias, geolocalizacion) del proyecto Sanos y Salvos. Incluye ejemplos de peticiones y respuestas para la Evaluación Parcial N°3 (DSY1106).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "bff_url", "value": "http://localhost:8080" },
+    { "key": "mascotas_url", "value": "http://localhost:8081" },
+    { "key": "coincidencias_url", "value": "http://localhost:8082" },
+    { "key": "geo_url", "value": "http://localhost:8083" }
+  ],
+  "item": [
+    {
+      "name": "BFF (Gateway)",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"ana@test.com\",\n  \"contrasena\": \"clave123\"\n}"
+            },
+            "url": { "raw": "{{bff_url}}/api/login", "host": ["{{bff_url}}"], "path": ["api", "login"] }
+          },
+          "response": [
+            {
+              "name": "200 OK - Login exitoso",
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"mensaje\": \"Login exitoso\",\n  \"correo\": \"ana@test.com\",\n  \"token\": \"jwt-simulado-sanos-y-salvos-xyz123\"\n}"
+            },
+            {
+              "name": "401 Unauthorized - Credenciales incorrectas",
+              "code": 401,
+              "status": "Unauthorized",
+              "body": "{\n  \"error\": \"Credenciales incorrectas\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Registro",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"nuevo@test.com\",\n  \"contrasena\": \"clave123\"\n}"
+            },
+            "url": { "raw": "{{bff_url}}/api/registro", "host": ["{{bff_url}}"], "path": ["api", "registro"] }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "code": 201,
+              "status": "Created",
+              "body": "{\n  \"mensaje\": \"¡Registro exitoso! Ya puedes iniciar sesión.\",\n  \"correo\": \"nuevo@test.com\"\n}"
+            },
+            {
+              "name": "409 Conflict - Correo ya registrado",
+              "code": 409,
+              "status": "Conflict",
+              "body": "{\n  \"error\": \"Este correo ya está registrado\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Listar mascotas",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{bff_url}}/api/mascotas", "host": ["{{bff_url}}"], "path": ["api", "mascotas"] }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "status": "OK",
+              "body": "[\n  {\n    \"id\": 1,\n    \"especie\": \"Perro\",\n    \"raza\": \"Labrador\",\n    \"tipoReporte\": \"PERDIDA\",\n    \"ubicacion\": \"Puente Alto\",\n    \"imagenesUrls\": \"\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Registrar mascota (dispara cálculo de coincidencias)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"especie\": \"Perro\",\n  \"raza\": \"Labrador\",\n  \"tipoReporte\": \"PERDIDA\",\n  \"ubicacion\": \"Puente Alto\"\n}"
+            },
+            "url": { "raw": "{{bff_url}}/api/mascotas", "host": ["{{bff_url}}"], "path": ["api", "mascotas"] }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"id\": 10,\n  \"especie\": \"Perro\",\n  \"raza\": \"Labrador\",\n  \"tipoReporte\": \"PERDIDA\",\n  \"ubicacion\": \"Puente Alto\",\n  \"imagenesUrls\": \"\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Listar coincidencias",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{bff_url}}/api/coincidencias", "host": ["{{bff_url}}"], "path": ["api", "coincidencias"] }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "status": "OK",
+              "body": "[\n  {\n    \"id\": 1,\n    \"idMascotaPerdida\": 1,\n    \"idMascotaEncontrada\": 2,\n    \"nivelSimilitud\": 100.0,\n    \"fechaAnalisis\": \"2026-06-23T10:00:00\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Calcular coincidencias para mascota",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{bff_url}}/api/coincidencias/calcular/1",
+              "host": ["{{bff_url}}"],
+              "path": ["api", "coincidencias", "calcular", "1"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "status": "OK",
+              "body": "[\n  {\n    \"id\": 1,\n    \"idMascotaPerdida\": 1,\n    \"idMascotaEncontrada\": 2,\n    \"nivelSimilitud\": 100.0,\n    \"fechaAnalisis\": \"2026-06-23T10:00:00\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Coincidencias de una mascota",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{bff_url}}/api/coincidencias/mascota/1",
+              "host": ["{{bff_url}}"],
+              "path": ["api", "coincidencias", "mascota", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mascotas (microservicio directo)",
+      "item": [
+        {
+          "name": "Listar mascotas",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{mascotas_url}}/api/mascotas", "host": ["{{mascotas_url}}"], "path": ["api", "mascotas"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener mascota por id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{mascotas_url}}/api/mascotas/1", "host": ["{{mascotas_url}}"], "path": ["api", "mascotas", "1"] }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "code": 404,
+              "status": "Not Found",
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Registrar mascota",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"especie\": \"Gato\",\n  \"raza\": \"Siames\",\n  \"tipoReporte\": \"ENCONTRADA\",\n  \"ubicacion\": \"Macul\"\n}"
+            },
+            "url": { "raw": "{{mascotas_url}}/api/mascotas", "host": ["{{mascotas_url}}"], "path": ["api", "mascotas"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar mascota",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"especie\": \"Gato\",\n  \"raza\": \"Persa\",\n  \"tipoReporte\": \"ENCONTRADA\",\n  \"ubicacion\": \"Macul\",\n  \"imagenesUrls\": \"\"\n}"
+            },
+            "url": { "raw": "{{mascotas_url}}/api/mascotas/1", "host": ["{{mascotas_url}}"], "path": ["api", "mascotas", "1"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar mascota",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{mascotas_url}}/api/mascotas/1", "host": ["{{mascotas_url}}"], "path": ["api", "mascotas", "1"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Login usuario",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"ana@test.com\",\n  \"contrasena\": \"clave123\"\n}"
+            },
+            "url": { "raw": "{{mascotas_url}}/api/usuarios/login", "host": ["{{mascotas_url}}"], "path": ["api", "usuarios", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Registro usuario",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"nuevo@test.com\",\n  \"contrasena\": \"clave123\"\n}"
+            },
+            "url": { "raw": "{{mascotas_url}}/api/usuarios/registro", "host": ["{{mascotas_url}}"], "path": ["api", "usuarios", "registro"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Coincidencias (microservicio directo)",
+      "item": [
+        {
+          "name": "Listar coincidencias",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{coincidencias_url}}/api/coincidencias", "host": ["{{coincidencias_url}}"], "path": ["api", "coincidencias"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Calcular coincidencias para mascota",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{coincidencias_url}}/api/coincidencias/calcular/1",
+              "host": ["{{coincidencias_url}}"],
+              "path": ["api", "coincidencias", "calcular", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Coincidencias de una mascota",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{coincidencias_url}}/api/coincidencias/mascota/1",
+              "host": ["{{coincidencias_url}}"],
+              "path": ["api", "coincidencias", "mascota", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test circuit breaker",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{coincidencias_url}}/api/coincidencias/test-circuit-breaker",
+              "host": ["{{coincidencias_url}}"],
+              "path": ["api", "coincidencias", "test-circuit-breaker"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "status": "OK",
+              "body": "\"Servicio de coincidencias activo - Circuit Breaker funcionando\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Geolocalizacion (microservicio directo)",
+      "item": [
+        {
+          "name": "Registrar ubicación",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{geo_url}}/api/geolocalizacion/registrar?idMascota=1&especie=Perro&raza=Labrador&tipoReporte=PERDIDA&latitud=-33.45&longitud=-70.65&direccionTexto=Puente Alto",
+              "host": ["{{geo_url}}"],
+              "path": ["api", "geolocalizacion", "registrar"],
+              "query": [
+                { "key": "idMascota", "value": "1" },
+                { "key": "especie", "value": "Perro" },
+                { "key": "raza", "value": "Labrador" },
+                { "key": "tipoReporte", "value": "PERDIDA" },
+                { "key": "latitud", "value": "-33.45" },
+                { "key": "longitud", "value": "-70.65" },
+                { "key": "direccionTexto", "value": "Puente Alto" }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"id\": 1,\n  \"idMascota\": 1,\n  \"especie\": \"Perro\",\n  \"raza\": \"Labrador\",\n  \"tipoReporte\": \"PERDIDA\",\n  \"latitud\": -33.45,\n  \"longitud\": -70.65,\n  \"direccionTexto\": \"Puente Alto\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Buscar cercanas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{geo_url}}/api/geolocalizacion/cercanas?latitud=-33.45&longitud=-70.65&radioKm=2&idMascotaExcluir=1",
+              "host": ["{{geo_url}}"],
+              "path": ["api", "geolocalizacion", "cercanas"],
+              "query": [
+                { "key": "latitud", "value": "-33.45" },
+                { "key": "longitud", "value": "-70.65" },
+                { "key": "radioKm", "value": "2" },
+                { "key": "idMascotaExcluir", "value": "1" }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"total\": 1,\n  \"radio_km\": 2,\n  \"mascotas\": [\n    { \"mascota\": { \"idMascota\": 2 }, \"distancia_km\": 0.8 }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Calcular distancia entre dos mascotas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{geo_url}}/api/geolocalizacion/distancia?idMascota1=1&idMascota2=2",
+              "host": ["{{geo_url}}"],
+              "path": ["api", "geolocalizacion", "distancia"],
+              "query": [
+                { "key": "idMascota1", "value": "1" },
+                { "key": "idMascota2", "value": "2" }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "code": 200,
+              "status": "OK",
+              "body": "0.8"
+            },
+            {
+              "name": "404 Not Found",
+              "code": 404,
+              "status": "Not Found",
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Coincidencias geolocalizadas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{geo_url}}/api/geolocalizacion/coincidencias/1?radioKm=2",
+              "host": ["{{geo_url}}"],
+              "path": ["api", "geolocalizacion", "coincidencias", "1"],
+              "query": [{ "key": "radioKm", "value": "2" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener todas las ubicaciones",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{geo_url}}/api/geolocalizacion/todas", "host": ["{{geo_url}}"], "path": ["api", "geolocalizacion", "todas"] }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

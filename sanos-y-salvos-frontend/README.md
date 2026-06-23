@@ -1,70 +1,61 @@
-# Getting Started with Create React App
+# Frontend — Sanos y Salvos
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Aplicación web (React) para reportar mascotas perdidas/encontradas, ver coincidencias y visualizar el mapa de reportes.
 
-## Available Scripts
+## Tecnologías
 
-In the project directory, you can run:
+- React 19 (Create React App / `react-scripts`)
+- React Router DOM
+- React Leaflet (mapa)
+- Axios / Fetch API
+- Testing Library (Jest + React Testing Library)
 
-### `npm start`
+## Requisitos previos
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Node.js y npm instalados.
+- El `bff` corriendo en `http://localhost:8080` (el frontend hace `proxy` hacia ese puerto, ver `package.json`).
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Instalar
 
-### `npm test`
+```bash
+cd sanos-y-salvos-frontend
+npm install
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Ejecutar en desarrollo
 
-### `npm run build`
+```bash
+npm start
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Abre automáticamente `http://localhost:3000`. Necesitas el `bff` (y por extensión `mascotas`, `coincidencias`, `geolocalizacion`) corriendo para que el login, el registro y los reportes funcionen.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Ejecutar las pruebas
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm test
+```
 
-### `npm run eject`
+Esto corre Jest en modo interactivo (watch). Para una sola corrida con reporte de cobertura:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+npm test -- --coverage --watchAll=false
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+El reporte de cobertura queda en `coverage/lcov-report/index.html`.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Construir para producción
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+npm run build
+```
 
-## Learn More
+Genera la versión optimizada en la carpeta `build/`.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Estructura principal
 
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```
+src/
+  components/   # Páginas y componentes (Login, Register, mapa, formularios, etc.)
+  App.js        # Rutas de la aplicación
+```
