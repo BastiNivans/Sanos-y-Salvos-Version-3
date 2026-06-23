@@ -1541,6 +1541,72 @@ body {
   font-size: 0.9rem;
 }
 
+.mapa-buscadores {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mapa-buscador-lugar {
+  position: relative;
+  flex: 1 1 280px;
+}
+
+.mapa-buscador-lugar input,
+.mapa-buscador-filtro {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.mapa-buscador-filtro {
+  flex: 1 1 280px;
+}
+
+.mapa-buscador-lugar input:focus,
+.mapa-buscador-filtro:focus {
+  border-color: #3b82f6;
+}
+
+.mapa-sugerencias-lista {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 4px 0 0 0;
+  padding: 0;
+  list-style: none;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1100;
+}
+
+.mapa-sugerencias-lista li {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: #334155;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mapa-sugerencias-lista li:last-child {
+  border-bottom: none;
+}
+
+.mapa-sugerencias-lista li:hover {
+  background: #f8fafc;
+}
+
 .mapa-container {
   flex-grow: 1;
   position: relative;

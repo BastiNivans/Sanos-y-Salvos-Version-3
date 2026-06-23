@@ -7,7 +7,7 @@ import Contacto from './components/Contacto';
 import './App.css';
 
 // 🗺️ IMPORTS PARA OPENSTREETMAP
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -15,6 +15,18 @@ const ProtectedRoute = ({ children }) => {
   if (!isAuth) return <Navigate to="/login" replace />;
   return children;
 };
+
+// 🔍 Componente auxiliar: vuela el mapa a una ubicación cuando "destino" cambia.
+// Debe renderizarse DENTRO de <MapContainer> para poder usar useMap().
+function VolarAUbicacion({ destino }) {
+  const map = useMap();
+  useEffect(() => {
+    if (destino) {
+      map.flyTo([destino.lat, destino.lon], 15, { duration: 1.2 });
+    }
+  }, [destino, map]);
+  return null;
+}
 
 function MainApp() {
   const [mascotas, setMascotas] = useState([]);
@@ -45,6 +57,13 @@ function MainApp() {
   // 🗺️ ESTADOS PARA EL MAPA
   const [mostrarMapa, setMostrarMapa] = useState(false);
   const [mascotasParaMapa, setMascotasParaMapa] = useState([]);
+
+  // 🔍 Buscador de lugar/dirección en el mapa (Nominatim) y filtro de mascotas visibles
+  const [busquedaLugarMapa, setBusquedaLugarMapa] = useState('');
+  const [sugerenciasLugarMapa, setSugerenciasLugarMapa] = useState([]);
+  const [mostrarSugerenciasLugarMapa, setMostrarSugerenciasLugarMapa] = useState(false);
+  const [vueloMapa, setVueloMapa] = useState(null); // { lat, lon } al que el mapa debe volar
+  const [busquedaMascotaMapa, setBusquedaMascotaMapa] = useState('');
 
   // 🆕 ESTADOS PARA AUTOCOMPLETADO DE UBICACIÓN
   const [sugerenciasUbicacion, setSugerenciasUbicacion] = useState([]);
@@ -269,6 +288,12 @@ function MainApp() {
       const response = await axios.get('http://localhost:8083/api/geolocalizacion/todas');
       setMascotasParaMapa(response.data);
       setMostrarMapa(true);
+      // 🔍 reset de los buscadores cada vez que se abre el mapa
+      setBusquedaLugarMapa('');
+      setSugerenciasLugarMapa([]);
+      setMostrarSugerenciasLugarMapa(false);
+      setVueloMapa(null);
+      setBusquedaMascotaMapa('');
     } catch (error) {
       console.error("Error al cargar el mapa:", error);
       alert("❌ Error al cargar el mapa. Asegúrate de que el microservicio de geolocalización (puerto 8083) esté corriendo.");
@@ -304,6 +329,47 @@ function MainApp() {
     setMostrarSugerencias(false);
     setSugerenciasUbicacion([]);
   };
+
+  // 🔍 BUSCAR UN LUGAR/DIRECCIÓN PARA CENTRAR EL MAPA AHÍ (mismo patrón que buscarSugerencias)
+  const buscarLugarMapa = async (texto) => {
+    setBusquedaLugarMapa(texto);
+
+    if (texto.length < 3) {
+      setSugerenciasLugarMapa([]);
+      setMostrarSugerenciasLugarMapa(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(texto)}&countrycodes=cl&limit=5`
+      );
+      const data = await response.json();
+      setSugerenciasLugarMapa(data);
+      setMostrarSugerenciasLugarMapa(data.length > 0);
+    } catch (error) {
+      console.error("Error al buscar el lugar:", error);
+    }
+  };
+
+  // 🔍 CENTRAR EL MAPA EN EL LUGAR ELEGIDO
+  const seleccionarLugarMapa = (lugar) => {
+    setVueloMapa({ lat: parseFloat(lugar.lat), lon: parseFloat(lugar.lon) });
+    setBusquedaLugarMapa(lugar.display_name);
+    setMostrarSugerenciasLugarMapa(false);
+    setSugerenciasLugarMapa([]);
+  };
+
+  // 🔍 MASCOTAS DEL MAPA FILTRADAS POR ESPECIE, RAZA O DIRECCIÓN
+  const mascotasFiltradasMapa = useMemo(() => {
+    if (!busquedaMascotaMapa.trim()) return mascotasParaMapa;
+    const q = busquedaMascotaMapa.toLowerCase();
+    return mascotasParaMapa.filter(m =>
+      (m.especie || '').toLowerCase().includes(q) ||
+      (m.raza || '').toLowerCase().includes(q) ||
+      (m.direccionTexto || '').toLowerCase().includes(q)
+    );
+  }, [mascotasParaMapa, busquedaMascotaMapa]);
 
   // Opciones dinámicas para los filtros
   const opcionesEspecie = useMemo(() => {
@@ -764,7 +830,36 @@ function MainApp() {
               
               <div className="mapa-header">
                 <h2>📍 Mapa de Mascotas</h2>
-                <p>{mascotasParaMapa.length} mascotas registradas</p>
+                <p>{mascotasFiltradasMapa.length} de {mascotasParaMapa.length} mascotas registradas</p>
+
+                <div className="mapa-buscadores">
+                  <div className="mapa-buscador-lugar">
+                    <input
+                      type="text"
+                      placeholder="🔎 Buscar una dirección o lugar..."
+                      value={busquedaLugarMapa}
+                      onChange={(e) => buscarLugarMapa(e.target.value)}
+                      onFocus={() => sugerenciasLugarMapa.length > 0 && setMostrarSugerenciasLugarMapa(true)}
+                    />
+                    {mostrarSugerenciasLugarMapa && sugerenciasLugarMapa.length > 0 && (
+                      <ul className="mapa-sugerencias-lista">
+                        {sugerenciasLugarMapa.map((lugar, index) => (
+                          <li key={index} onClick={() => seleccionarLugarMapa(lugar)}>
+                            {lugar.display_name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <input
+                    type="text"
+                    className="mapa-buscador-filtro"
+                    placeholder="🐾 Filtrar por especie, raza o ubicación..."
+                    value={busquedaMascotaMapa}
+                    onChange={(e) => setBusquedaMascotaMapa(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="mapa-container">
@@ -777,8 +872,10 @@ function MainApp() {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
-                  
-                  {mascotasParaMapa.map(mascota => {
+
+                  <VolarAUbicacion destino={vueloMapa} />
+
+                  {mascotasFiltradasMapa.map(mascota => {
                     if (!mascota.latitud || !mascota.longitud) return null;
                     
                     const color = mascota.tipoReporte === 'PERDIDA' ? '#ef4444' : 

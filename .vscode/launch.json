@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "GeolocalizacionApplication",
+            "request": "launch",
+            "mainClass": "com.sanosysalvos.geolocalizacion.GeolocalizacionApplication",
+            "projectName": "geolocalizacion"
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"
